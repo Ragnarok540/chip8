@@ -7,7 +7,7 @@ class Chip8:
         self.graphics = [0] * 2048
         self.registers = [0] * 16
         self.index = 0
-        self.program_counter = 0
+        self.program_counter = 0x0200
 
         self.delay_timer = 0
         self.sound_timer = 0
@@ -30,7 +30,9 @@ class Chip8:
         branch = self.opcode & 0xF000
 
         if branch == 0x0000:
-            if self.opcode == 0x00EE:
+            branch = self.opcode & 0x000F
+
+            if branch == 0x000E:
                 self.ret()
                 return
 
@@ -61,6 +63,13 @@ class Chip8:
         if branch == 0x7000:
             self.add_constant()
             return
+
+        if branch == 0x8000:
+            branch = self.opcode & 0x000F
+
+            if branch == 0x0000:
+                self.set_register()
+                return
 
         if branch == 0xA000:
             self.load_index()
@@ -127,6 +136,11 @@ class Chip8:
     # 7XKK
     def add_constant(self):
         self.registers[(self.opcode & 0x0F00) >> 8] += self.opcode & 0x00FF
+        self.program_counter += 2
+
+    # 8XY0
+    def set_register(self):
+        self.registers[(self.opcode & 0x0F00) >> 8] = self.registers[(self.opcode & 0x00F0) >> 4]
         self.program_counter += 2
 
     # ANNN
