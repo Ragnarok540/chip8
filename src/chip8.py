@@ -1,20 +1,21 @@
 import random
 
+
 class Chip8:
     def __init__(self):
         self.opcode = 0
         self.memory = [0] * 4096
-        self.graphics = [0] * 2048
-        self.registers = [0] * 16
+        self.gfx = [0] * 2048  # graphics
+        self.regs = [0] * 16  # registers
         self.index = 0
-        self.program_counter = 0x0200
+        self.pc = 0x0200  # program_counter
 
         self.delay_timer = 0
         self.sound_timer = 0
-        
+
         self.stack = [0] * 16
-        self.stack_pointer = 0
-        
+        self.sp = 0  # stack_pointer
+
         self.keys = [0] * 16
 
     def emulate_cycle(self):
@@ -23,8 +24,7 @@ class Chip8:
         # update timers
 
     def fetch_opcode(self):
-        pc = self.program_counter
-        self.opcode = self.memory[pc] << 8 | self.memory[pc + 1]
+        self.opcode = self.memory[self.pc] << 8 | self.memory[self.pc + 1]
 
     def decode_opcode(self):
         branch = self.opcode & 0xF000
@@ -71,6 +71,10 @@ class Chip8:
                 self.set_register()
                 return
 
+            if branch == 0x0001:
+                self.bitwise_or()
+                return
+
         if branch == 0xA000:
             self.load_index()
             return
@@ -87,77 +91,83 @@ class Chip8:
 
     # 00EE
     def ret(self):
-        self.stack_pointer -= 1
-        self.program_counter = self.stack[self.stack_pointer]
+        self.sp -= 1
+        self.pc = self.stack[self.sp]
 
     # 1NNN
     def goto(self):
-        self.program_counter = self.opcode & 0x0FFF
+        self.pc = self.opcode & 0x0FFF
 
     # 2NNN
     def call(self):
-        self.stack[self.stack_pointer] = self.program_counter
-        self.stack_pointer += 1
-        self.program_counter = self.opcode & 0x0FFF
+        self.stack[self.sp] = self.pc
+        self.sp += 1
+        self.pc = self.opcode & 0x0FFF
 
     # 3XKK
     def skip_equal(self):
-        vx = self.registers[(self.opcode & 0x0F00) >> 8]
+        vx = self.regs[(self.opcode & 0x0F00) >> 8]
 
         if vx == (self.opcode & 0x00FF):
-            self.program_counter += 4
+            self.pc += 4
         else:
-            self.program_counter += 2    
+            self.pc += 2
 
     # 4XKK
     def skip_not_equal(self):
-        vx = self.registers[(self.opcode & 0x0F00) >> 8]
+        vx = self.regs[(self.opcode & 0x0F00) >> 8]
 
         if vx != (self.opcode & 0x00FF):
-            self.program_counter += 4
+            self.pc += 4
         else:
-            self.program_counter += 2 
+            self.pc += 2
 
     # 5XY0
     def skip_equal_reg(self):
-        vx = self.registers[(self.opcode & 0x0F00) >> 8]
-        vy = self.registers[(self.opcode & 0x00F0) >> 4]
+        vx = self.regs[(self.opcode & 0x0F00) >> 8]
+        vy = self.regs[(self.opcode & 0x00F0) >> 4]
 
         if vx == vy:
-            self.program_counter += 4
+            self.pc += 4
         else:
-            self.program_counter += 2 
+            self.pc += 2
 
     # 6XKK
     def load_register(self):
-        self.registers[(self.opcode & 0x0F00) >> 8] = self.opcode & 0x00FF
-        self.program_counter += 2
+        self.regs[(self.opcode & 0x0F00) >> 8] = self.opcode & 0x00FF
+        self.pc += 2
 
     # 7XKK
     def add_constant(self):
-        self.registers[(self.opcode & 0x0F00) >> 8] += self.opcode & 0x00FF
-        self.program_counter += 2
+        self.regs[(self.opcode & 0x0F00) >> 8] += self.opcode & 0x00FF
+        self.pc += 2
 
     # 8XY0
     def set_register(self):
-        self.registers[(self.opcode & 0x0F00) >> 8] = self.registers[(self.opcode & 0x00F0) >> 4]
-        self.program_counter += 2
+        self.regs[(self.opcode & 0x0F00) >> 8] = self.regs[(self.opcode & 0x00F0) >> 4]
+        self.pc += 2
+
+    # 8XY1
+    def bitwise_or(self):
+        result = self.regs[(self.opcode & 0x0F00) >> 8] | self.regs[(self.opcode & 0x00F0) >> 4]
+        self.regs[(self.opcode & 0x0F00) >> 8] = result
+        self.pc += 2
 
     # ANNN
     def load_index(self):
         self.index = self.opcode & 0x0FFF
-        self.program_counter += 2
+        self.pc += 2
 
     # BNNN
     def jump(self):
-        v0 = self.registers[0]
-        self.program_counter = v0 + (self.opcode & 0x0FFF)
+        v0 = self.regs[0]
+        self.pc = v0 + (self.opcode & 0x0FFF)
 
     # CXKK
     def random_value(self):
         result = random.randint(0, 255) & (self.opcode & 0x00FF)
-        self.registers[(self.opcode & 0x0F00) >> 8] = result
-        self.program_counter += 2
+        self.regs[(self.opcode & 0x0F00) >> 8] = result
+        self.pc += 2
 
 
 """
