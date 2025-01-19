@@ -75,6 +75,14 @@ class Chip8:
                 self.bitwise_or()
                 return
 
+            if branch == 0x0002:
+                self.bitwise_and()
+                return
+
+            if branch == 0x0003:
+                self.bitwise_xor()
+                return
+
         if branch == 0xA000:
             self.load_index()
             return
@@ -150,6 +158,18 @@ class Chip8:
     # 8XY1
     def bitwise_or(self):
         result = self.regs[(self.opcode & 0x0F00) >> 8] | self.regs[(self.opcode & 0x00F0) >> 4]
+        self.regs[(self.opcode & 0x0F00) >> 8] = result
+        self.pc += 2
+
+    # 8XY2
+    def bitwise_and(self):
+        result = self.regs[(self.opcode & 0x0F00) >> 8] & self.regs[(self.opcode & 0x00F0) >> 4]
+        self.regs[(self.opcode & 0x0F00) >> 8] = result
+        self.pc += 2
+
+    # 8XY3
+    def bitwise_xor(self):
+        result = self.regs[(self.opcode & 0x0F00) >> 8] ^ self.regs[(self.opcode & 0x00F0) >> 4]
         self.regs[(self.opcode & 0x0F00) >> 8] = result
         self.pc += 2
 
