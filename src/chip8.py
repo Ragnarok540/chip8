@@ -27,75 +27,47 @@ class Chip8:
         self.opcode = self.memory[self.pc] << 8 | self.memory[self.pc + 1]
 
     def decode_opcode(self):
-        branch = self.opcode & 0xF000
-
-        if branch == 0x0000:
-            branch = self.opcode & 0x000F
-
-            if branch == 0x000E:
-                self.ret()
-                return
-
-        if branch == 0x1000:
-            self.goto()
-            return
-
-        if branch == 0x2000:
-            self.call()
-            return
-
-        if branch == 0x3000:
-            self.skip_equal()
-            return
-
-        if branch == 0x4000:
-            self.skip_not_equal()
-            return
-
-        if branch == 0x5000:
-            self.skip_equal_reg()
-            return
-
-        if branch == 0x6000:
-            self.load_register()
-            return
-
-        if branch == 0x7000:
-            self.add_constant()
-            return
-
-        if branch == 0x8000:
-            branch = self.opcode & 0x000F
-
-            if branch == 0x0000:
-                self.set_register()
-                return
-
-            if branch == 0x0001:
-                self.bitwise_or()
-                return
-
-            if branch == 0x0002:
-                self.bitwise_and()
-                return
-
-            if branch == 0x0003:
-                self.bitwise_xor()
-                return
-
-        if branch == 0xA000:
-            self.load_index()
-            return
-
-        if branch == 0xB000:
-            self.jump()
-            return
-
-        if branch == 0xC000:
-            self.random_value()
-            return
-
-        raise Exception(f'opcode could not be decoded: {hex(self.opcode)}')
+        match self.opcode & 0xF000:
+            case 0x0000:
+                match self.opcode & 0x000F:
+                    case 0x000E:
+                        self.ret()
+                    case _:
+                        raise DecodeError(hex(self.opcode))
+            case 0x1000:
+                self.goto()
+            case 0x2000:
+                self.call()
+            case 0x3000:
+                self.skip_equal()
+            case 0x4000:
+                self.skip_not_equal()
+            case 0x5000:
+                self.skip_equal_reg()
+            case 0x6000:
+                self.load_register()
+            case 0x7000:
+                self.add_constant()
+            case 0x8000:
+                match self.opcode & 0x000F:
+                    case 0x0000:
+                        self.set_register()
+                    case 0x0001:
+                        self.bitwise_or()
+                    case 0x0002:
+                        self.bitwise_and()
+                    case 0x0003:
+                        self.bitwise_xor()
+                    case _:
+                        raise DecodeError(hex(self.opcode))
+            case 0xA000:
+                self.load_index()
+            case 0xB000:
+                self.jump()
+            case 0xC000:
+                self.random_value()
+            case _:
+                raise DecodeError(hex(self.opcode))
 
     # 00EE
     def ret(self):
@@ -189,6 +161,13 @@ class Chip8:
         self.regs[(self.opcode & 0x0F00) >> 8] = result
         self.pc += 2
 
+
+class DecodeError(Exception):
+    def __init__(self, message):
+        self.message = f'opcode could not be decoded: {message}'
+
+    def __str__(self):
+        return self.message
 
 """
 
