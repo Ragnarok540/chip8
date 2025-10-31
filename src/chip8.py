@@ -144,7 +144,8 @@ class Chip8:
         """
         set vX = KK
         """
-        self.regs[(self.opcode & 0x0F00) >> 8] = self.opcode & 0x00FF
+        vxi = (self.opcode & 0x0F00) >> 8
+        self.regs[vxi] = self.opcode & 0x00FF
         self.pc += 2
 
     # 7XKK
@@ -152,7 +153,8 @@ class Chip8:
         """
         set vX = vX + KK
         """
-        self.regs[(self.opcode & 0x0F00) >> 8] += self.opcode & 0x00FF
+        vxi = (self.opcode & 0x0F00) >> 8
+        self.regs[vxi] += self.opcode & 0x00FF
         self.pc += 2
 
     # 8XY0
@@ -160,7 +162,9 @@ class Chip8:
         """
         set vX to the value of vY
         """
-        self.regs[(self.opcode & 0x0F00) >> 8] = self.regs[(self.opcode & 0x00F0) >> 4]
+        vxi = (self.opcode & 0x0F00) >> 8
+        vyi = (self.opcode & 0x00F0) >> 4
+        self.regs[vxi] = self.regs[vyi]
         self.pc += 2
 
     # 8XY1
@@ -168,8 +172,9 @@ class Chip8:
         """
         set vX = vX OR vY
         """
-        result = self.regs[(self.opcode & 0x0F00) >> 8] | self.regs[(self.opcode & 0x00F0) >> 4]
-        self.regs[(self.opcode & 0x0F00) >> 8] = result
+        vxi = (self.opcode & 0x0F00) >> 8
+        vyi = (self.opcode & 0x00F0) >> 4
+        self.regs[vxi] = self.regs[vxi] | self.regs[vyi]
         self.pc += 2
 
     # 8XY2
@@ -177,8 +182,9 @@ class Chip8:
         """
         set vX = vX AND vY
         """
-        result = self.regs[(self.opcode & 0x0F00) >> 8] & self.regs[(self.opcode & 0x00F0) >> 4]
-        self.regs[(self.opcode & 0x0F00) >> 8] = result
+        vxi = (self.opcode & 0x0F00) >> 8
+        vyi = (self.opcode & 0x00F0) >> 4
+        self.regs[vxi] = self.regs[vxi] & self.regs[vyi]
         self.pc += 2
 
     # 8XY3
@@ -186,8 +192,9 @@ class Chip8:
         """
         set vX = vX XOR vY
         """
-        result = self.regs[(self.opcode & 0x0F00) >> 8] ^ self.regs[(self.opcode & 0x00F0) >> 4]
-        self.regs[(self.opcode & 0x0F00) >> 8] = result
+        vxi = (self.opcode & 0x0F00) >> 8
+        vyi = (self.opcode & 0x00F0) >> 4
+        self.regs[vxi] = self.regs[vxi] ^ self.regs[vyi]
         self.pc += 2
 
     # ANNN
@@ -209,7 +216,8 @@ class Chip8:
         set vX to a random value masked (bitwise AND) with KK
         """
         result = random.randint(0, 255) & (self.opcode & 0x00FF)
-        self.regs[(self.opcode & 0x0F00) >> 8] = result
+        vxi = (self.opcode & 0x0F00) >> 8
+        self.regs[vxi] = result
         self.pc += 2
 
 

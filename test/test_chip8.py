@@ -14,7 +14,7 @@ class Chip8Test(unittest.TestCase):
     # 2NNN 00EE
     def test_call_ret(self):
         """
-        call subroutine at nnn
+        call subroutine at NNN
         return from a subroutine
         """
         c8 = Chip8()
@@ -50,6 +50,40 @@ class Chip8Test(unittest.TestCase):
         """
         skip next instruction if vX = KK
         """
+        c8 = Chip8()
+        c8.memory[c8.pc] = 0x30
+        c8.memory[c8.pc + 1] = 0xFF
+        c8.regs[0] = 0xFF
+        c8.emulate_cycle()
+        observed = c8.pc
+        self.assertEqual(0x0204, observed)
+
+    # 4XKK
+    def test_skip_not_equal(self):
+        """
+        skip next instruction if vX != KK
+        """
+        c8 = Chip8()
+        c8.memory[c8.pc] = 0x40
+        c8.memory[c8.pc + 1] = 0xFF
+        c8.regs[0] = 0x00
+        c8.emulate_cycle()
+        observed = c8.pc
+        self.assertEqual(0x0204, observed)
+
+    # 5XY0
+    def test_skip_equal_reg(self):
+        """
+        skip next instruction if vX = vY
+        """
+        c8 = Chip8()
+        c8.memory[c8.pc] = 0x50
+        c8.memory[c8.pc + 1] = 0x10
+        c8.regs[0] = 0xFF
+        c8.regs[1] = 0xFF
+        c8.emulate_cycle()
+        observed = c8.pc
+        self.assertEqual(0x0204, observed)
 
     # 8XY0
     def test_set_register(self):
