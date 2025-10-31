@@ -29,8 +29,10 @@ class Chip8:
     def decode_opcode(self):
         match self.opcode & 0xF000:
             case 0x0000:
-                match self.opcode & 0x000F:
-                    case 0x000E:
+                match self.opcode & 0x00FF:
+                    case 0x00E0:
+                        self.clear_screen()
+                    case 0x00EE:
                         self.ret()
                     case _:
                         raise DecodeError(hex(self.opcode))
@@ -69,23 +71,42 @@ class Chip8:
             case _:
                 raise DecodeError(hex(self.opcode))
 
+    # 00E0
+    def clear_screen(self):
+        """
+        clear the screen
+        """
+        self.gfx = [0] * 2048
+
     # 00EE
     def ret(self):
+        """
+        return from a subroutine
+        """
         self.sp -= 1
         self.pc = self.stack[self.sp]
 
     # 1NNN
     def goto(self):
+        """
+        jump to location nnn
+        """
         self.pc = self.opcode & 0x0FFF
 
     # 2NNN
     def call(self):
+        """
+        call subroutine at nnn
+        """
         self.stack[self.sp] = self.pc
         self.sp += 1
         self.pc = self.opcode & 0x0FFF
 
     # 3XKK
     def skip_equal(self):
+        """
+        skip next instruction if vX = KK
+        """
         vx = self.regs[(self.opcode & 0x0F00) >> 8]
 
         if vx == (self.opcode & 0x00FF):
@@ -95,6 +116,9 @@ class Chip8:
 
     # 4XKK
     def skip_not_equal(self):
+        """
+        skip next instruction if vX != KK
+        """
         vx = self.regs[(self.opcode & 0x0F00) >> 8]
 
         if vx != (self.opcode & 0x00FF):
@@ -104,6 +128,9 @@ class Chip8:
 
     # 5XY0
     def skip_equal_reg(self):
+        """
+        skip next instruction if vX = vY
+        """
         vx = self.regs[(self.opcode & 0x0F00) >> 8]
         vy = self.regs[(self.opcode & 0x00F0) >> 4]
 
@@ -114,39 +141,60 @@ class Chip8:
 
     # 6XKK
     def load_register(self):
+        """
+        set vX = KK
+        """
         self.regs[(self.opcode & 0x0F00) >> 8] = self.opcode & 0x00FF
         self.pc += 2
 
     # 7XKK
     def add_constant(self):
+        """
+        set vX = vX + KK
+        """
         self.regs[(self.opcode & 0x0F00) >> 8] += self.opcode & 0x00FF
         self.pc += 2
 
     # 8XY0
     def set_register(self):
+        """
+        set vX to the value of vY
+        """
         self.regs[(self.opcode & 0x0F00) >> 8] = self.regs[(self.opcode & 0x00F0) >> 4]
         self.pc += 2
 
     # 8XY1
     def bitwise_or(self):
+        """
+        set vX = vX OR vY
+        """
         result = self.regs[(self.opcode & 0x0F00) >> 8] | self.regs[(self.opcode & 0x00F0) >> 4]
         self.regs[(self.opcode & 0x0F00) >> 8] = result
         self.pc += 2
 
     # 8XY2
     def bitwise_and(self):
+        """
+        set vX = vX AND vY
+        """
         result = self.regs[(self.opcode & 0x0F00) >> 8] & self.regs[(self.opcode & 0x00F0) >> 4]
         self.regs[(self.opcode & 0x0F00) >> 8] = result
         self.pc += 2
 
     # 8XY3
     def bitwise_xor(self):
+        """
+        set vX = vX XOR vY
+        """
         result = self.regs[(self.opcode & 0x0F00) >> 8] ^ self.regs[(self.opcode & 0x00F0) >> 4]
         self.regs[(self.opcode & 0x0F00) >> 8] = result
         self.pc += 2
 
     # ANNN
     def load_index(self):
+        """
+        set I to NNN
+        """
         self.index = self.opcode & 0x0FFF
         self.pc += 2
 
@@ -157,12 +205,18 @@ class Chip8:
 
     # CXKK
     def random_value(self):
+        """
+        set vX to a random value masked (bitwise AND) with KK
+        """
         result = random.randint(0, 255) & (self.opcode & 0x00FF)
         self.regs[(self.opcode & 0x0F00) >> 8] = result
         self.pc += 2
 
 
 class DecodeError(Exception):
+    """
+    use when the opcode can not be decoded
+    """
     def __init__(self, message):
         self.message = f'opcode could not be decoded: {message}'
 
