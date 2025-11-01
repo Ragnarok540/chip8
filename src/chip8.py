@@ -18,6 +18,14 @@ class Chip8:
 
         self.keys = [0] * 16
 
+    @property
+    def vxi(self):
+        return (self.opcode & 0x0F00) >> 8
+
+    @property
+    def vyi(self):
+        return (self.opcode & 0x00F0) >> 4
+
     def emulate_cycle(self):
         self.fetch_opcode()
         self.decode_opcode()
@@ -107,7 +115,7 @@ class Chip8:
         """
         skip next instruction if vX = KK
         """
-        vx = self.regs[(self.opcode & 0x0F00) >> 8]
+        vx = self.regs[self.vxi]
 
         if vx == (self.opcode & 0x00FF):
             self.pc += 4
@@ -119,7 +127,7 @@ class Chip8:
         """
         skip next instruction if vX != KK
         """
-        vx = self.regs[(self.opcode & 0x0F00) >> 8]
+        vx = self.regs[self.vxi]
 
         if vx != (self.opcode & 0x00FF):
             self.pc += 4
@@ -131,8 +139,8 @@ class Chip8:
         """
         skip next instruction if vX = vY
         """
-        vx = self.regs[(self.opcode & 0x0F00) >> 8]
-        vy = self.regs[(self.opcode & 0x00F0) >> 4]
+        vx = self.regs[self.vxi]
+        vy = self.regs[self.vyi]
 
         if vx == vy:
             self.pc += 4
@@ -144,8 +152,7 @@ class Chip8:
         """
         set vX = KK
         """
-        vxi = (self.opcode & 0x0F00) >> 8
-        self.regs[vxi] = self.opcode & 0x00FF
+        self.regs[self.vxi] = self.opcode & 0x00FF
         self.pc += 2
 
     # 7XKK
@@ -153,8 +160,7 @@ class Chip8:
         """
         set vX = vX + KK
         """
-        vxi = (self.opcode & 0x0F00) >> 8
-        self.regs[vxi] += self.opcode & 0x00FF
+        self.regs[self.vxi] += self.opcode & 0x00FF
         self.pc += 2
 
     # 8XY0
@@ -162,9 +168,7 @@ class Chip8:
         """
         set vX to the value of vY
         """
-        vxi = (self.opcode & 0x0F00) >> 8
-        vyi = (self.opcode & 0x00F0) >> 4
-        self.regs[vxi] = self.regs[vyi]
+        self.regs[self.vxi] = self.regs[self.vyi]
         self.pc += 2
 
     # 8XY1
@@ -172,9 +176,7 @@ class Chip8:
         """
         set vX = vX OR vY
         """
-        vxi = (self.opcode & 0x0F00) >> 8
-        vyi = (self.opcode & 0x00F0) >> 4
-        self.regs[vxi] = self.regs[vxi] | self.regs[vyi]
+        self.regs[self.vxi] = self.regs[self.vxi] | self.regs[self.vyi]
         self.pc += 2
 
     # 8XY2
@@ -182,9 +184,7 @@ class Chip8:
         """
         set vX = vX AND vY
         """
-        vxi = (self.opcode & 0x0F00) >> 8
-        vyi = (self.opcode & 0x00F0) >> 4
-        self.regs[vxi] = self.regs[vxi] & self.regs[vyi]
+        self.regs[self.vxi] = self.regs[self.vxi] & self.regs[self.vyi]
         self.pc += 2
 
     # 8XY3
@@ -192,9 +192,7 @@ class Chip8:
         """
         set vX = vX XOR vY
         """
-        vxi = (self.opcode & 0x0F00) >> 8
-        vyi = (self.opcode & 0x00F0) >> 4
-        self.regs[vxi] = self.regs[vxi] ^ self.regs[vyi]
+        self.regs[self.vxi] = self.regs[self.vxi] ^ self.regs[self.vyi]
         self.pc += 2
 
     # ANNN
@@ -216,8 +214,7 @@ class Chip8:
         set vX to a random value masked (bitwise AND) with KK
         """
         result = random.randint(0, 255) & (self.opcode & 0x00FF)
-        vxi = (self.opcode & 0x0F00) >> 8
-        self.regs[vxi] = result
+        self.regs[self.vxi] = result
         self.pc += 2
 
 

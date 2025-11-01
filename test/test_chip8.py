@@ -85,6 +85,35 @@ class Chip8Test(unittest.TestCase):
         observed = c8.pc
         self.assertEqual(0x0204, observed)
 
+    # 6XKK
+    def test_load_register(self):
+        """
+        set vX = KK
+        """
+        c8 = Chip8()
+        c8.memory[c8.pc] = 0x60
+        c8.memory[c8.pc + 1] = 0xFF
+        c8.emulate_cycle()
+        observed = c8.regs[0]
+        self.assertEqual(0xFF, observed)
+        observed = c8.pc
+        self.assertEqual(0x0202, observed)
+
+    # 7XKK
+    def test_add_constant(self):
+        """
+        set vX = vX + KK
+        """
+        c8 = Chip8()
+        c8.memory[c8.pc] = 0x70
+        c8.memory[c8.pc + 1] = 0x01
+        c8.regs[0] = 0x01
+        c8.emulate_cycle()
+        observed = c8.regs[0]
+        self.assertEqual(0x02, observed)
+        observed = c8.pc
+        self.assertEqual(0x0202, observed)
+
     # 8XY0
     def test_set_register(self):
         """
@@ -96,7 +125,7 @@ class Chip8Test(unittest.TestCase):
         c8.regs[1] = 0xFF
         c8.emulate_cycle()
         observed = c8.regs[0]
-        self.assertEqual(0xff, observed)
+        self.assertEqual(0xFF, observed)
         observed = c8.pc
         self.assertEqual(0x0202, observed)
 
@@ -110,7 +139,7 @@ class Chip8Test(unittest.TestCase):
         c8.memory[c8.pc + 1] = 0xF0
         c8.emulate_cycle()
         observed = c8.index
-        self.assertEqual(0x2f0, observed)
+        self.assertEqual(0x2F0, observed)
         observed = c8.pc
         self.assertEqual(0x0202, observed)
 
