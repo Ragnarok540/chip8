@@ -55,27 +55,71 @@ class Chip8:
             case 0x5000:
                 self.skip_equal_reg()
             case 0x6000:
-                self.load_register()
+                self.load_reg()
             case 0x7000:
                 self.add_constant()
             case 0x8000:
                 match self.opcode & 0x000F:
                     case 0x0000:
-                        self.set_register()
+                        self.set_reg()
                     case 0x0001:
                         self.bitwise_or()
                     case 0x0002:
                         self.bitwise_and()
                     case 0x0003:
                         self.bitwise_xor()
+                    case 0x0004:
+                        self.add()
+                    case 0x0005:
+                        self.sub()
+                    case 0x0006:
+                        self.shr()
+                    case 0x0007:
+                        self.subn()
+                    case 0x000E:
+                        self.shl()
                     case _:
                         raise DecodeError(hex(self.opcode))
+            case 0x9000:
+                self.skip_reg_not_equal()
             case 0xA000:
                 self.load_index()
             case 0xB000:
                 self.jump()
             case 0xC000:
                 self.random_value()
+            case 0xD000:
+                self.draw()
+            case 0xE000:
+                match self.opcode & 0x00FF:
+                    case 0x009E:
+                        self.skip_key_pressed()
+                    case 0x00A1:
+                        self.skip_key_not_pressed()
+                    case _:
+                        raise DecodeError(hex(self.opcode))
+            case 0xF000:
+                match self.opcode & 0x00FF:
+                    case 0x0007:
+                        self.load_delay()
+                    case 0x000A:
+                        self.load_key_pressed()
+                    case 0x0015:
+                        self.set_delay()
+                    case 0x0018:
+                        self.set_sound()
+                    case 0x001E:
+                        self.add_index()
+                    case 0x0029:
+                        self.load_hex_sprite()
+                    case 0x0033:
+                        self.store_bcd()
+                    case 0x0055:
+                        self.store_regs()
+                    case 0x0065:
+                        self.read_regs()
+                    case _:
+                        raise DecodeError(hex(self.opcode))
             case _:
                 raise DecodeError(hex(self.opcode))
 
@@ -85,6 +129,7 @@ class Chip8:
         clear the screen
         """
         self.gfx = [0] * 2048
+        self.pc += 2
 
     # 00EE
     def ret(self):
@@ -110,10 +155,10 @@ class Chip8:
         self.sp += 1
         self.pc = self.opcode & 0x0FFF
 
-    # 3XKK
+    # 3XNN
     def skip_equal(self):
         """
-        skip next instruction if vX = KK
+        skip next instruction if vX = NN
         """
         vx = self.regs[self.vxi]
 
@@ -122,10 +167,10 @@ class Chip8:
         else:
             self.pc += 2
 
-    # 4XKK
+    # 4XNN
     def skip_not_equal(self):
         """
-        skip next instruction if vX != KK
+        skip next instruction if vX != NN
         """
         vx = self.regs[self.vxi]
 
@@ -147,24 +192,24 @@ class Chip8:
         else:
             self.pc += 2
 
-    # 6XKK
-    def load_register(self):
+    # 6XNN
+    def load_reg(self):
         """
-        set vX = KK
+        set vX = NN
         """
         self.regs[self.vxi] = self.opcode & 0x00FF
         self.pc += 2
 
-    # 7XKK
+    # 7XNN
     def add_constant(self):
         """
-        set vX = vX + KK
+        set vX = vX + NN
         """
         self.regs[self.vxi] += self.opcode & 0x00FF
         self.pc += 2
 
     # 8XY0
-    def set_register(self):
+    def set_reg(self):
         """
         set vX to the value of vY
         """
@@ -195,6 +240,42 @@ class Chip8:
         self.regs[self.vxi] = self.regs[self.vxi] ^ self.regs[self.vyi]
         self.pc += 2
 
+    # 8XY4
+    def add(self):
+        """
+        set vX = vX + vY, set vF = 1 if vX > 255
+        """
+
+    # 8XY5
+    def sub(self):
+        """
+        set vF = 1 if vX > vY, set vX = vX - vY
+        """
+
+    # 8XY6
+    def shr(self):
+        """
+        set vX = vY and shift vX one bit to the right, set vF to the bit shifted out
+        """
+
+    # 8XY7
+    def subn(self):
+        """
+        set vF = 1 if vY > vX, set vX = vY - vX
+        """
+
+    # 8XYE
+    def shl(self):
+        """
+        set vX = vY and shift vX one bit to the left, set vF to the bit shifted out
+        """
+
+    # 9XY0
+    def skip_reg_not_equal(self):
+        """
+        skip next instruction if vX != vY
+        """
+
     # ANNN
     def load_index(self):
         """
@@ -205,17 +286,91 @@ class Chip8:
 
     # BNNN
     def jump(self):
-        v0 = self.regs[0]
-        self.pc = v0 + (self.opcode & 0x0FFF)
+        """
+        jump to address NNN + v0
+        """
+        self.pc = self.regs[0] + (self.opcode & 0x0FFF)
 
-    # CXKK
+    # CXNN
     def random_value(self):
         """
-        set vX to a random value masked (bitwise AND) with KK
+        set vX to a random value masked (bitwise AND) with NN
         """
         result = random.randint(0, 255) & (self.opcode & 0x00FF)
         self.regs[self.vxi] = result
         self.pc += 2
+
+    # DXYN
+    def draw(self):
+        """
+        draw 8xN pixel sprite at position vX, vY with data starting at the address in I
+        """
+
+    # EX9E
+    def skip_key_pressed(self):
+        """
+        skip next instruction if key with the value of vX is pressed
+        """
+
+    # EXA1
+    def skip_key_not_pressed(self):
+        """
+        skip next instruction if key with the value of vX is not pressed
+        """
+
+    # FX07
+    def load_delay(self):
+        """
+        set vX = delay timer value
+        """
+
+    # FX0A
+    def load_key_pressed(self):
+        """
+        set vX = key pressed
+        """
+
+    # FX15
+    def set_delay(self):
+        """
+        set delay timer value = vX
+        """
+
+    # FX18
+    def set_sound(self):
+        """
+        set sound timer value = vX
+        """
+
+    # FX1E
+    def add_index(self):
+        """
+        set I = I + vX
+        """
+
+    # FX29
+    def load_hex_sprite(self):
+        """
+        set I = location of sprite for digit vX
+        """
+
+    # FX33
+    def store_bcd(self):
+        """
+        store BCD representation of vX in memory locations I, I+1, and I+2
+        """
+
+    # FX55
+    def store_regs(self):
+        """
+        store registers v0 through vX in memory starting at location I
+        """
+
+    # FX65
+    def read_regs(self):
+        """
+        read registers v0 through vX from memory starting at location I
+        """
 
 
 class DecodeError(Exception):
@@ -227,92 +382,3 @@ class DecodeError(Exception):
 
     def __str__(self):
         return self.message
-
-"""
-
-import pygame, sys
-from pygame.locals import *
-import random
- 
-pygame.init()
- 
-FPS = 60
-FramePerSec = pygame.time.Clock()
- 
-# Predefined some colors
-BLUE  = (0, 0, 255)
-RED   = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
- 
-# Screen information
-SCREEN_WIDTH = 400
-SCREEN_HEIGHT = 600
- 
-DISPLAYSURF = pygame.display.set_mode((400,600))
-DISPLAYSURF.fill(WHITE)
-pygame.display.set_caption("Game")
- 
- 
-class Enemy(pygame.sprite.Sprite):
-      def __init__(self):
-        super().__init__() 
-        self.image = pygame.image.load("enemy.png")
-        self.rect = self.image.get_rect()
-        self.rect.center=(random.randint(40,SCREEN_WIDTH-40),0) 
- 
-      def move(self):
-        self.rect.move_ip(0,10)
-        if (self.rect.bottom > 600):
-            self.rect.top = 0
-            self.rect.center = (random.randint(30, 370), 0)
- 
-      def draw(self, surface):
-        surface.blit(self.image, self.rect) 
- 
- 
-class Player(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__() 
-        self.image = pygame.image.load("player.png")
-        self.rect = self.image.get_rect()
-        self.rect.center = (160, 520)
- 
-    def update(self):
-        pressed_keys = pygame.key.get_pressed()
-       #if pressed_keys[K_UP]:
-            #self.rect.move_ip(0, -5)
-       #if pressed_keys[K_DOWN]:
-            #self.rect.move_ip(0,5)
-         
-        if self.rect.left > 0:
-              if pressed_keys[K_LEFT]:
-                  self.rect.move_ip(-5, 0)
-        if self.rect.right < SCREEN_WIDTH:        
-              if pressed_keys[K_RIGHT]:
-                  self.rect.move_ip(5, 0)
- 
-    def draw(self, surface):
-        surface.blit(self.image, self.rect)     
- 
-         
-P1 = Player()
-E1 = Enemy()
- 
-while True:     
-    for event in pygame.event.get():              
-        if event.type == QUIT:
-            pygame.quit()
-            sys.exit()
-    P1.update()
-    E1.move()
-     
-    DISPLAYSURF.fill(WHITE)
-    P1.draw(DISPLAYSURF)
-    E1.draw(DISPLAYSURF)
-         
-    pygame.display.update()
-    FramePerSec.tick(FPS)
-
-"""

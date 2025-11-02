@@ -45,10 +45,10 @@ class Chip8Test(unittest.TestCase):
         observed = c8.pc
         self.assertEqual(0x0666, observed)
 
-    # 3XKK
+    # 3XNN
     def test_skip_equal(self):
         """
-        skip next instruction if vX = KK
+        skip next instruction if vX = NN
         """
         c8 = Chip8()
         c8.memory[c8.pc] = 0x30
@@ -58,10 +58,10 @@ class Chip8Test(unittest.TestCase):
         observed = c8.pc
         self.assertEqual(0x0204, observed)
 
-    # 4XKK
+    # 4XNN
     def test_skip_not_equal(self):
         """
-        skip next instruction if vX != KK
+        skip next instruction if vX != NN
         """
         c8 = Chip8()
         c8.memory[c8.pc] = 0x40
@@ -85,10 +85,10 @@ class Chip8Test(unittest.TestCase):
         observed = c8.pc
         self.assertEqual(0x0204, observed)
 
-    # 6XKK
+    # 6XNN
     def test_load_register(self):
         """
-        set vX = KK
+        set vX = NN
         """
         c8 = Chip8()
         c8.memory[c8.pc] = 0x60
@@ -99,10 +99,10 @@ class Chip8Test(unittest.TestCase):
         observed = c8.pc
         self.assertEqual(0x0202, observed)
 
-    # 7XKK
+    # 7XNN
     def test_add_constant(self):
         """
-        set vX = vX + KK
+        set vX = vX + NN
         """
         c8 = Chip8()
         c8.memory[c8.pc] = 0x70
@@ -129,6 +129,54 @@ class Chip8Test(unittest.TestCase):
         observed = c8.pc
         self.assertEqual(0x0202, observed)
 
+    # 8XY1
+    def test_bitwise_or(self):
+        """
+        set vX = vX OR vY
+        """
+        c8 = Chip8()
+        c8.memory[c8.pc] = 0x80
+        c8.memory[c8.pc + 1] = 0x11
+        c8.regs[0] = 0x12
+        c8.regs[1] = 0x34
+        c8.emulate_cycle()
+        observed = c8.regs[0]
+        self.assertEqual(0x36, observed)
+        observed = c8.pc
+        self.assertEqual(0x0202, observed)
+
+    # 8XY2
+    def test_bitwise_and(self):
+        """
+        set vX = vX AND vY
+        """
+        c8 = Chip8()
+        c8.memory[c8.pc] = 0x80
+        c8.memory[c8.pc + 1] = 0x12
+        c8.regs[0] = 0x12
+        c8.regs[1] = 0x34
+        c8.emulate_cycle()
+        observed = c8.regs[0]
+        self.assertEqual(0x10, observed)
+        observed = c8.pc
+        self.assertEqual(0x0202, observed)
+
+    # 8XY3
+    def test_bitwise_xor(self):
+        """
+        set vX = vX XOR vY
+        """
+        c8 = Chip8()
+        c8.memory[c8.pc] = 0x80
+        c8.memory[c8.pc + 1] = 0x13
+        c8.regs[0] = 0x12
+        c8.regs[1] = 0x34
+        c8.emulate_cycle()
+        observed = c8.regs[0]
+        self.assertEqual(0x26, observed)
+        observed = c8.pc
+        self.assertEqual(0x0202, observed)
+
     # ANNN
     def test_load_index(self):
         """
@@ -143,10 +191,23 @@ class Chip8Test(unittest.TestCase):
         observed = c8.pc
         self.assertEqual(0x0202, observed)
 
-    # CXKK
+    # BNNN
+    def test_jump(self):
+        """
+        jump to address NNN + v0
+        """
+        c8 = Chip8()
+        c8.memory[c8.pc] = 0xB6
+        c8.memory[c8.pc + 1] = 0x65
+        c8.regs[0] = 0x01
+        c8.emulate_cycle()
+        observed = c8.pc
+        self.assertEqual(0x0666, observed)
+
+    # CXNN
     def test_random_value(self):
         """
-        set vX to a random value masked (bitwise AND) with KK
+        set vX to a random value masked (bitwise AND) with NN
         """
         c8 = Chip8()
         c8.memory[c8.pc] = 0xC0
