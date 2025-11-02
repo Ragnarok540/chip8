@@ -245,30 +245,75 @@ class Chip8:
         """
         set vX = vX + vY, set vF = 1 if vX > 255
         """
+        val = self.regs[self.vxi] + self.regs[self.vyi]
+        self.regs[self.vxi] = val & 0xFF
+
+        if val > 0xFF:
+            self.regs[0xF] = 0x1
+        else:
+            self.regs[0xF] = 0x0
+
+        self.pc += 2
 
     # 8XY5
     def sub(self):
         """
         set vF = 1 if vX > vY, set vX = vX - vY
         """
+        if self.regs[self.vxi] > self.regs[self.vyi]:
+            self.regs[0xF] = 0x1
+        else:
+            self.regs[0xF] = 0x0
+
+        self.regs[self.vxi] = self.regs[self.vxi] - self.regs[self.vyi]
+        self.pc += 2
 
     # 8XY6
     def shr(self):
         """
-        set vX = vY and shift vX one bit to the right, set vF to the bit shifted out
+        set vX = vY
+        if the least-significant bit of vX is 1, then vF = 1
+        shift vX one bit to the right
         """
+        self.regs[self.vxi] = self.regs[self.vyi]
+
+        if self.regs[self.vxi] & 0b1 == 0b1:
+            self.regs[0xF] = 0x1
+        else:
+            self.regs[0xF] = 0x0
+
+        self.regs[self.vxi] = self.regs[self.vxi] >> 1
+        self.pc += 2
 
     # 8XY7
     def subn(self):
         """
         set vF = 1 if vY > vX, set vX = vY - vX
         """
+        if self.regs[self.vyi] > self.regs[self.vxi]:
+            self.regs[0xF] = 0x1
+        else:
+            self.regs[0xF] = 0x0
+
+        self.regs[self.vxi] = self.regs[self.vyi] - self.regs[self.vxi]
+        self.pc += 2
 
     # 8XYE
     def shl(self):
         """
-        set vX = vY and shift vX one bit to the left, set vF to the bit shifted out
+        set vX = vY
+        if the most-significant bit of vX is 1, then vF = 1
+        shift vX one bit to the left
         """
+        self.regs[self.vxi] = self.regs[self.vyi]
+
+        if self.regs[self.vxi] & 0b10000000 == 0b10000000:
+            self.regs[0xF] = 0x1
+        else:
+            self.regs[0xF] = 0x0
+
+        self.regs[self.vxi] = self.regs[self.vxi] << 1
+        self.pc += 2
 
     # 9XY0
     def skip_reg_not_equal(self):

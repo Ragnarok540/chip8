@@ -177,6 +177,100 @@ class Chip8Test(unittest.TestCase):
         observed = c8.pc
         self.assertEqual(0x0202, observed)
 
+    # 8XY4
+    def test_add(self):
+        """
+        set vX = vX + vY, set vF = 1 if vX > 255
+        """
+        c8 = Chip8()
+        c8.memory[c8.pc] = 0x80
+        c8.memory[c8.pc + 1] = 0x14
+        c8.regs[0] = 0xFF
+        c8.regs[1] = 0xFF
+        c8.emulate_cycle()
+        observed = c8.regs[0]
+        self.assertEqual(0xFE, observed)
+        observed = c8.regs[0xF]
+        self.assertEqual(1, observed)
+        observed = c8.pc
+        self.assertEqual(0x0202, observed)
+
+    # 8XY5
+    def test_sub(self):
+        """
+        set vF = 1 if vX > vY, set vX = vX - vY
+        """
+        c8 = Chip8()
+        c8.memory[c8.pc] = 0x80
+        c8.memory[c8.pc + 1] = 0x15
+        c8.regs[0] = 0xFF
+        c8.regs[1] = 0xEE
+        c8.emulate_cycle()
+        observed = c8.regs[0]
+        self.assertEqual(0x11, observed)
+        observed = c8.regs[0xF]
+        self.assertEqual(1, observed)
+        observed = c8.pc
+        self.assertEqual(0x0202, observed)
+
+    # 8XY6
+    def test_shr(self):
+        """
+        set vX = vY
+        if the least-significant bit of vX is 1, then vF = 1
+        shift vX one bit to the right
+        """
+        c8 = Chip8()
+        c8.memory[c8.pc] = 0x80
+        c8.memory[c8.pc + 1] = 0x16
+        c8.regs[0] = 0x00
+        c8.regs[1] = 0xFF
+        c8.emulate_cycle()
+        observed = c8.regs[0]
+        self.assertEqual(0x7F, observed)
+        observed = c8.regs[0xF]
+        self.assertEqual(1, observed)
+        observed = c8.pc
+        self.assertEqual(0x0202, observed)
+
+    # 8XY7
+    def test_subn(self):
+        """
+        set vF = 1 if vY > vX, set vX = vY - vX
+        """
+        c8 = Chip8()
+        c8.memory[c8.pc] = 0x80
+        c8.memory[c8.pc + 1] = 0x17
+        c8.regs[0] = 0xEE
+        c8.regs[1] = 0xFF
+        c8.emulate_cycle()
+        observed = c8.regs[0]
+        self.assertEqual(0x11, observed)
+        observed = c8.regs[0xF]
+        self.assertEqual(1, observed)
+        observed = c8.pc
+        self.assertEqual(0x0202, observed)
+
+    # 8XYE
+    def test_shl(self):
+        """
+        set vX = vY
+        if the most-significant bit of vX is 1, then vF = 1
+        shift vX one bit to the left
+        """
+        c8 = Chip8()
+        c8.memory[c8.pc] = 0x80
+        c8.memory[c8.pc + 1] = 0x1E
+        c8.regs[0] = 0x00
+        c8.regs[1] = 0x11
+        c8.emulate_cycle()
+        observed = c8.regs[0]
+        self.assertEqual(0x22, observed)
+        observed = c8.regs[0xF]
+        self.assertEqual(0, observed)
+        observed = c8.pc
+        self.assertEqual(0x0202, observed)
+
     # ANNN
     def test_load_index(self):
         """
