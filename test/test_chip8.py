@@ -271,6 +271,20 @@ class Chip8Test(unittest.TestCase):
         observed = c8.pc
         self.assertEqual(0x0202, observed)
 
+    # 9XY0
+    def test_skip_reg_not_equal(self):
+        """
+        skip next instruction if vX != vY
+        """
+        c8 = Chip8()
+        c8.memory[c8.pc] = 0x90
+        c8.memory[c8.pc + 1] = 0x10
+        c8.regs[0] = 0xFF
+        c8.regs[1] = 0xFE
+        c8.emulate_cycle()
+        observed = c8.pc
+        self.assertEqual(0x0204, observed)
+
     # ANNN
     def test_load_index(self):
         """
@@ -312,3 +326,17 @@ class Chip8Test(unittest.TestCase):
         self.assertLessEqual(0, observed)
         observed = c8.pc
         self.assertEqual(0x0202, observed)
+
+    # EX9E
+    def test_skip_key_pressed(self):
+        """
+        skip next instruction if key with the value of vX is pressed
+        """
+        c8 = Chip8()
+        c8.memory[c8.pc] = 0xE0
+        c8.memory[c8.pc + 1] = 0x9E
+        c8.regs[0] = 0x1
+        c8.keys[1] = 0x1
+        c8.emulate_cycle()
+        observed = c8.pc
+        self.assertEqual(0x0204, observed)

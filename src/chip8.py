@@ -4,7 +4,7 @@ import random
 class Chip8:
     def __init__(self):
         self.opcode = 0
-        self.memory = [0] * 4096
+        self.memory = [0x0] * 4096
         self.gfx = [0] * 2048  # graphics
         self.regs = [0] * 16  # registers
         self.index = 0
@@ -12,6 +12,7 @@ class Chip8:
 
         self.delay_timer = 0
         self.sound_timer = 0
+        self.draw_flag = False
 
         self.stack = [0] * 16
         self.sp = 0  # stack_pointer
@@ -26,8 +27,44 @@ class Chip8:
     def vyi(self):
         return (self.opcode & 0x00F0) >> 4
 
+    @property
+    def n(self):
+        return self.opcode & 0x000F
+
+    @property
+    def nn(self):
+        return self.opcode & 0x00FF
+
+    @property
+    def nnn(self):
+        return self.opcode & 0x0FFF
+
+    def load_rom(self, path: str):
+        counter = 0
+
+        with open(path, 'rb') as rom:
+            while True:
+                chunk = rom.read(1)
+
+                if not chunk:
+                    break
+
+                self.memory[self.pc + counter] = chunk[0]
+                counter += 1
+
+    def draw_console(self):
+        for y in range(0, 32):
+            for x in range(0, 64):
+                if x == 63:
+                    print()
+                if self.gfx[x + y * 64]:
+                    print('█', end='')
+                else:
+                    print(' ', end='')
+
     def emulate_cycle(self):
         self.fetch_opcode()
+        print(hex(self.opcode))
         self.decode_opcode()
         # update timers
 
@@ -144,7 +181,7 @@ class Chip8:
         """
         jump to location nnn
         """
-        self.pc = self.opcode & 0x0FFF
+        self.pc = self.nnn
 
     # 2NNN
     def call(self):
@@ -153,16 +190,14 @@ class Chip8:
         """
         self.stack[self.sp] = self.pc
         self.sp += 1
-        self.pc = self.opcode & 0x0FFF
+        self.pc = self.nnn
 
     # 3XNN
     def skip_equal(self):
         """
         skip next instruction if vX = NN
         """
-        vx = self.regs[self.vxi]
-
-        if vx == (self.opcode & 0x00FF):
+        if self.regs[self.vxi] == self.nn:
             self.pc += 4
         else:
             self.pc += 2
@@ -172,9 +207,7 @@ class Chip8:
         """
         skip next instruction if vX != NN
         """
-        vx = self.regs[self.vxi]
-
-        if vx != (self.opcode & 0x00FF):
+        if self.regs[self.vxi] != self.nn:
             self.pc += 4
         else:
             self.pc += 2
@@ -184,10 +217,7 @@ class Chip8:
         """
         skip next instruction if vX = vY
         """
-        vx = self.regs[self.vxi]
-        vy = self.regs[self.vyi]
-
-        if vx == vy:
+        if self.regs[self.vxi] == self.regs[self.vyi]:
             self.pc += 4
         else:
             self.pc += 2
@@ -197,7 +227,7 @@ class Chip8:
         """
         set vX = NN
         """
-        self.regs[self.vxi] = self.opcode & 0x00FF
+        self.regs[self.vxi] = self.nn
         self.pc += 2
 
     # 7XNN
@@ -205,7 +235,7 @@ class Chip8:
         """
         set vX = vX + NN
         """
-        self.regs[self.vxi] += self.opcode & 0x00FF
+        self.regs[self.vxi] += self.nn
         self.pc += 2
 
     # 8XY0
@@ -320,13 +350,17 @@ class Chip8:
         """
         skip next instruction if vX != vY
         """
+        if self.regs[self.vxi] != self.regs[self.vyi]:
+            self.pc += 4
+        else:
+            self.pc += 2
 
     # ANNN
     def load_index(self):
         """
         set I to NNN
         """
-        self.index = self.opcode & 0x0FFF
+        self.index = self.nnn
         self.pc += 2
 
     # BNNN
@@ -334,28 +368,53 @@ class Chip8:
         """
         jump to address NNN + v0
         """
-        self.pc = self.regs[0] + (self.opcode & 0x0FFF)
+        self.pc = self.regs[0] + self.nnn
 
     # CXNN
     def random_value(self):
         """
         set vX to a random value masked (bitwise AND) with NN
         """
-        result = random.randint(0, 255) & (self.opcode & 0x00FF)
+        result = random.randint(0, 255) & self.nn
         self.regs[self.vxi] = result
         self.pc += 2
 
     # DXYN
     def draw(self):
         """
-        draw 8xN pixel sprite at position vX, vY with data starting at the address in I
+        draw 8xN pixel sprite at position vX, vY
+        with data starting at the address in I
+        set vF = collision
         """
+        x = self.vxi
+        x_pos = self.regs[x] % 64
+        y = self.vyi
+        y_pos = self.regs[y] % 32
+        height = self.n
+        self.regs[0xF] = 0
+
+        for row in range(0, height):
+            pixel = self.memory[self.index + row]
+
+            for col in range(0, 8):
+                if (pixel & (0x80 >> col)) != 0:
+                    if self.gfx[(x_pos + col + ((y_pos + row) * 64))] == 1:
+                        self.regs[0xF] = 1
+
+                    self.gfx[x_pos + col + ((y_pos + row) * 64)] ^= 1
+
+        self.draw_flag = True
+        self.pc += 2
 
     # EX9E
     def skip_key_pressed(self):
         """
         skip next instruction if key with the value of vX is pressed
         """
+        if self.keys[self.regs[self.vxi]] == 1:
+            self.pc += 4
+        else:
+            self.pc += 2
 
     # EXA1
     def skip_key_not_pressed(self):
