@@ -65,6 +65,7 @@ class Chip8:
     def emulate_cycle(self):
         self.fetch_opcode()
         print(hex(self.opcode))
+        self.pc += 2
         self.decode_opcode()
         # update timers
 
@@ -160,15 +161,14 @@ class Chip8:
             case _:
                 raise DecodeError(hex(self.opcode))
 
-    # 00E0
+    # 00E0 TESTED
     def clear_screen(self):
         """
         clear the screen
         """
         self.gfx = [0] * 2048
-        self.pc += 2
 
-    # 00EE
+    # 00EE TESTED
     def ret(self):
         """
         return from a subroutine
@@ -176,14 +176,14 @@ class Chip8:
         self.sp -= 1
         self.pc = self.stack[self.sp]
 
-    # 1NNN
+    # 1NNN TESTED
     def goto(self):
         """
         jump to location nnn
         """
         self.pc = self.nnn
 
-    # 2NNN
+    # 2NNN TESTED
     def call(self):
         """
         call subroutine at nnn
@@ -192,85 +192,74 @@ class Chip8:
         self.sp += 1
         self.pc = self.nnn
 
-    # 3XNN
+    # 3XNN TESTED
     def skip_equal(self):
         """
         skip next instruction if vX = NN
         """
         if self.regs[self.vxi] == self.nn:
-            self.pc += 4
-        else:
             self.pc += 2
 
-    # 4XNN
+    # 4XNN TESTED
     def skip_not_equal(self):
         """
         skip next instruction if vX != NN
         """
         if self.regs[self.vxi] != self.nn:
-            self.pc += 4
-        else:
             self.pc += 2
 
-    # 5XY0
+    # 5XY0 TESTED
     def skip_equal_reg(self):
         """
         skip next instruction if vX = vY
         """
         if self.regs[self.vxi] == self.regs[self.vyi]:
-            self.pc += 4
-        else:
             self.pc += 2
 
-    # 6XNN
+    # 6XNN TESTED
     def load_reg(self):
         """
         set vX = NN
         """
         self.regs[self.vxi] = self.nn
-        self.pc += 2
 
-    # 7XNN
+    # 7XNN TESTED
     def add_constant(self):
         """
         set vX = vX + NN
         """
-        self.regs[self.vxi] += self.nn
-        self.pc += 2
+        val = self.regs[self.vxi] + self.nn
+        self.regs[self.vxi] = val & 0xFF
 
-    # 8XY0
+    # 8XY0 TESTED
     def set_reg(self):
         """
         set vX to the value of vY
         """
         self.regs[self.vxi] = self.regs[self.vyi]
-        self.pc += 2
 
-    # 8XY1
+    # 8XY1 TESTED
     def bitwise_or(self):
         """
         set vX = vX OR vY
         """
         self.regs[self.vxi] = self.regs[self.vxi] | self.regs[self.vyi]
-        self.pc += 2
 
-    # 8XY2
+    # 8XY2 TESTED
     def bitwise_and(self):
         """
         set vX = vX AND vY
         """
         self.regs[self.vxi] = self.regs[self.vxi] & self.regs[self.vyi]
-        self.pc += 2
 
-    # 8XY3
+    # 8XY3 TESTED
     def bitwise_xor(self):
         """
         set vX = vX XOR vY
         """
         self.regs[self.vxi] = self.regs[self.vxi] ^ self.regs[self.vyi]
-        self.pc += 2
 
-    # 8XY4
+    # 8XY4 TESTED
     def add(self):
         """
         set vX = vX + vY, set vF = 1 if vX > 255
@@ -283,8 +272,6 @@ class Chip8:
         else:
             self.regs[0xF] = 0x0
 
-        self.pc += 2
-
     # 8XY5
     def sub(self):
         """
@@ -296,9 +283,8 @@ class Chip8:
             self.regs[0xF] = 0x0
 
         self.regs[self.vxi] = self.regs[self.vxi] - self.regs[self.vyi]
-        self.pc += 2
 
-    # 8XY6
+    # 8XY6 TESTED
     def shr(self):
         """
         set vX = vY
@@ -313,7 +299,6 @@ class Chip8:
             self.regs[0xF] = 0x0
 
         self.regs[self.vxi] = self.regs[self.vxi] >> 1
-        self.pc += 2
 
     # 8XY7
     def subn(self):
@@ -326,7 +311,6 @@ class Chip8:
             self.regs[0xF] = 0x0
 
         self.regs[self.vxi] = self.regs[self.vyi] - self.regs[self.vxi]
-        self.pc += 2
 
     # 8XYE
     def shl(self):
@@ -343,25 +327,21 @@ class Chip8:
             self.regs[0xF] = 0x0
 
         self.regs[self.vxi] = self.regs[self.vxi] << 1
-        self.pc += 2
 
-    # 9XY0
+    # 9XY0 TESTED
     def skip_reg_not_equal(self):
         """
         skip next instruction if vX != vY
         """
         if self.regs[self.vxi] != self.regs[self.vyi]:
-            self.pc += 4
-        else:
             self.pc += 2
 
-    # ANNN
+    # ANNN TESTED
     def load_index(self):
         """
         set I to NNN
         """
         self.index = self.nnn
-        self.pc += 2
 
     # BNNN
     def jump(self):
@@ -377,9 +357,8 @@ class Chip8:
         """
         result = random.randint(0, 255) & self.nn
         self.regs[self.vxi] = result
-        self.pc += 2
 
-    # DXYN
+    # DXYN TESTED
     def draw(self):
         """
         draw 8xN pixel sprite at position vX, vY
@@ -404,7 +383,6 @@ class Chip8:
                     self.gfx[x_pos + col + ((y_pos + row) * 64)] ^= 1
 
         self.draw_flag = True
-        self.pc += 2
 
     # EX9E
     def skip_key_pressed(self):
@@ -412,8 +390,6 @@ class Chip8:
         skip next instruction if key with the value of vX is pressed
         """
         if self.keys[self.regs[self.vxi]] == 1:
-            self.pc += 4
-        else:
             self.pc += 2
 
     # EXA1
