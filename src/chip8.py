@@ -272,7 +272,7 @@ class Chip8:
         else:
             self.regs[0xF] = 0x0
 
-    # 8XY5
+    # 8XY5 TESTED
     def sub(self):
         """
         set vF = 1 if vX > vY, set vX = vX - vY
@@ -282,7 +282,8 @@ class Chip8:
         else:
             self.regs[0xF] = 0x0
 
-        self.regs[self.vxi] = self.regs[self.vxi] - self.regs[self.vyi]
+        val = self.regs[self.vxi] - self.regs[self.vyi]
+        self.regs[self.vxi] = val & 0xFF
 
     # 8XY6 TESTED
     def shr(self):
@@ -291,7 +292,7 @@ class Chip8:
         if the least-significant bit of vX is 1, then vF = 1
         shift vX one bit to the right
         """
-        self.regs[self.vxi] = self.regs[self.vyi]
+        # self.regs[self.vxi] = self.regs[self.vyi]
 
         if self.regs[self.vxi] & 0b1 == 0b1:
             self.regs[0xF] = 0x1
@@ -300,7 +301,7 @@ class Chip8:
 
         self.regs[self.vxi] = self.regs[self.vxi] >> 1
 
-    # 8XY7
+    # 8XY7 TESTED
     def subn(self):
         """
         set vF = 1 if vY > vX, set vX = vY - vX
@@ -310,7 +311,8 @@ class Chip8:
         else:
             self.regs[0xF] = 0x0
 
-        self.regs[self.vxi] = self.regs[self.vyi] - self.regs[self.vxi]
+        val = self.regs[self.vyi] - self.regs[self.vxi]
+        self.regs[self.vxi] = val & 0xFF
 
     # 8XYE
     def shl(self):
@@ -319,12 +321,9 @@ class Chip8:
         if the most-significant bit of vX is 1, then vF = 1
         shift vX one bit to the left
         """
-        self.regs[self.vxi] = self.regs[self.vyi]
+        # self.regs[self.vxi] = self.regs[self.vyi]
 
-        if self.regs[self.vxi] & 0b10000000 == 0b10000000:
-            self.regs[0xF] = 0x1
-        else:
-            self.regs[0xF] = 0x0
+        self.regs[0xF] = (self.regs[self.vxi] & 0x80) >> 7
 
         self.regs[self.vxi] = self.regs[self.vxi] << 1
 
