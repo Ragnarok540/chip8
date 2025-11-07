@@ -324,8 +324,7 @@ class Chip8:
         # self.regs[self.vxi] = self.regs[self.vyi]
 
         self.regs[0xF] = (self.regs[self.vxi] & 0x80) >> 7
-
-        self.regs[self.vxi] = self.regs[self.vxi] << 1
+        self.regs[self.vxi] = (self.regs[self.vxi] << 1) & 0xFF
 
     # 9XY0 TESTED
     def skip_reg_not_equal(self):
@@ -396,12 +395,15 @@ class Chip8:
         """
         skip next instruction if key with the value of vX is not pressed
         """
+        if self.keys[self.regs[self.vxi]] == 0:
+            self.pc += 2
 
     # FX07
     def load_delay(self):
         """
         set vX = delay timer value
         """
+        self.regs[self.vxi] = self.delay_timer
 
     # FX0A
     def load_key_pressed(self):
@@ -421,11 +423,12 @@ class Chip8:
         set sound timer value = vX
         """
 
-    # FX1E
+    # FX1E TESTED
     def add_index(self):
         """
         set I = I + vX
         """
+        self.index = self.index + self.regs[self.vxi]
 
     # FX29
     def load_hex_sprite(self):
@@ -433,23 +436,34 @@ class Chip8:
         set I = location of sprite for digit vX
         """
 
-    # FX33
+    # FX33 TESTED
     def store_bcd(self):
         """
         store BCD representation of vX in memory locations I, I+1, and I+2
         """
+        hundred = self.regs[self.vxi] // 100 % 10
+        ten = self.regs[self.vxi] // 10 % 10
+        one = self.regs[self.vxi] % 10
 
-    # FX55
+        self.memory[self.index] = hundred
+        self.memory[self.index + 1] = ten
+        self.memory[self.index + 2] = one
+
+    # FX55 TESTED
     def store_regs(self):
         """
         store registers v0 through vX in memory starting at location I
         """
+        for i in range(self.vxi + 1):
+            self.memory[self.index + i] = self.regs[i]
 
-    # FX65
+    # FX65 TESTED
     def read_regs(self):
         """
         read registers v0 through vX from memory starting at location I
         """
+        for i in range(self.vxi + 1):
+            self.regs[i] = self.memory[self.index + i]
 
 
 class DecodeError(Exception):
