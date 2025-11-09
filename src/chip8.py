@@ -55,12 +55,13 @@ class Chip8:
     def draw_console(self):
         for y in range(0, 32):
             for x in range(0, 64):
-                if x == 63:
-                    print()
                 if self.gfx[x + y * 64]:
                     print('█', end='')
                 else:
                     print(' ', end='')
+
+                if x == 63:
+                    print()
 
     def emulate_cycle(self):
         self.fetch_opcode()
@@ -272,20 +273,20 @@ class Chip8:
         else:
             self.regs[0xF] = 0x0
 
-    # 8XY5 TESTED
+    # 8XY5
     def sub(self):
         """
         set vF = 1 if vX > vY, set vX = vX - vY
         """
+        val = self.regs[self.vxi] - self.regs[self.vyi]
+        self.regs[self.vxi] = val & 0xFF
+
         if self.regs[self.vxi] > self.regs[self.vyi]:
             self.regs[0xF] = 0x1
         else:
             self.regs[0xF] = 0x0
 
-        val = self.regs[self.vxi] - self.regs[self.vyi]
-        self.regs[self.vxi] = val & 0xFF
-
-    # 8XY6 TESTED
+    # 8XY6
     def shr(self):
         """
         set vX = vY
@@ -294,25 +295,21 @@ class Chip8:
         """
         # self.regs[self.vxi] = self.regs[self.vyi]
 
-        if self.regs[self.vxi] & 0b1 == 0b1:
-            self.regs[0xF] = 0x1
-        else:
-            self.regs[0xF] = 0x0
-
-        self.regs[self.vxi] = self.regs[self.vxi] >> 1
+        self.regs[self.vxi] = (self.regs[self.vxi] >> 1) & 0xFF
+        self.regs[0xF] = self.regs[self.vxi] & 0x1
 
     # 8XY7 TESTED
     def subn(self):
         """
         set vF = 1 if vY > vX, set vX = vY - vX
         """
+        val = self.regs[self.vyi] - self.regs[self.vxi]
+        self.regs[self.vxi] = val & 0xFF
+
         if self.regs[self.vyi] > self.regs[self.vxi]:
             self.regs[0xF] = 0x1
         else:
             self.regs[0xF] = 0x0
-
-        val = self.regs[self.vyi] - self.regs[self.vxi]
-        self.regs[self.vxi] = val & 0xFF
 
     # 8XYE
     def shl(self):
@@ -323,8 +320,8 @@ class Chip8:
         """
         # self.regs[self.vxi] = self.regs[self.vyi]
 
-        self.regs[0xF] = (self.regs[self.vxi] & 0x80) >> 7
         self.regs[self.vxi] = (self.regs[self.vxi] << 1) & 0xFF
+        self.regs[0xF] = (self.regs[self.vxi] & 0x80) >> 7
 
     # 9XY0 TESTED
     def skip_reg_not_equal(self):
