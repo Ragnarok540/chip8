@@ -278,10 +278,11 @@ class Chip8:
         """
         set vF = 1 if vX > vY, set vX = vX - vY
         """
-        val = self.regs[self.vxi] - self.regs[self.vyi]
-        self.regs[self.vxi] = val & 0xFF
+        val_0 = self.regs[self.vxi]
+        val_1 = self.regs[self.vxi] - self.regs[self.vyi]
+        self.regs[self.vxi] = val_1 & 0xFF
 
-        if self.regs[self.vxi] > self.regs[self.vyi]:
+        if val_0 >= self.regs[self.vyi]:
             self.regs[0xF] = 0x1
         else:
             self.regs[0xF] = 0x0
@@ -295,8 +296,9 @@ class Chip8:
         """
         # self.regs[self.vxi] = self.regs[self.vyi]
 
+        val = self.regs[self.vxi]
         self.regs[self.vxi] = (self.regs[self.vxi] >> 1) & 0xFF
-        self.regs[0xF] = self.regs[self.vxi] & 0x1
+        self.regs[0xF] = val & 0x1
 
     # 8XY7 TESTED
     def subn(self):
@@ -320,8 +322,9 @@ class Chip8:
         """
         # self.regs[self.vxi] = self.regs[self.vyi]
 
+        val = self.regs[self.vxi]
         self.regs[self.vxi] = (self.regs[self.vxi] << 1) & 0xFF
-        self.regs[0xF] = (self.regs[self.vxi] & 0x80) >> 7
+        self.regs[0xF] = (val & 0x80) >> 7
 
     # 9XY0 TESTED
     def skip_reg_not_equal(self):
