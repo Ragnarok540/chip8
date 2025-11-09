@@ -1,84 +1,54 @@
-# import pygame, sys
-# from pygame.locals import *
-# import random
+import pygame
+from chip8 import Chip8
 
-# pygame.init()
+c8 = Chip8()
+c8.load_rom('6-keypad.ch8')
 
-# FPS = 60
-# FramePerSec = pygame.time.Clock()
+pygame.init()
+screen = pygame.display.set_mode((640, 320))
+clock = pygame.time.Clock()
+running = True
+dt = 0
 
-# # Predefined some colors
-# BLUE  = (0, 0, 255)
-# RED   = (255, 0, 0)
-# GREEN = (0, 255, 0)
-# BLACK = (0, 0, 0)
-# WHITE = (255, 255, 255)
+while running:
+    c8.emulate_cycle()
 
-# # Screen information
-# SCREEN_WIDTH = 400
-# SCREEN_HEIGHT = 600
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
 
-# DISPLAYSURF = pygame.display.set_mode((400,600))
-# DISPLAYSURF.fill(WHITE)
-# pygame.display.set_caption("Game")
+    keys = pygame.key.get_pressed()
 
+    c8.keys[0x0] = keys[pygame.K_0]
+    c8.keys[0x1] = keys[pygame.K_1]
+    c8.keys[0x2] = keys[pygame.K_2]
+    c8.keys[0x3] = keys[pygame.K_3]
+    c8.keys[0x4] = keys[pygame.K_4]
+    c8.keys[0x5] = keys[pygame.K_5]
+    c8.keys[0x6] = keys[pygame.K_6]
+    c8.keys[0x7] = keys[pygame.K_7]
+    c8.keys[0x8] = keys[pygame.K_8]
+    c8.keys[0x9] = keys[pygame.K_9]
+    c8.keys[0xA] = keys[pygame.K_a]
+    c8.keys[0xB] = keys[pygame.K_b]
+    c8.keys[0xC] = keys[pygame.K_c]
+    c8.keys[0xD] = keys[pygame.K_d]
+    c8.keys[0xE] = keys[pygame.K_e]
+    c8.keys[0xF] = keys[pygame.K_f]
 
-# class Enemy(pygame.sprite.Sprite):
-#       def __init__(self):
-#         super().__init__()
-#         self.image = pygame.image.load("enemy.png")
-#         self.rect = self.image.get_rect()
-#         self.rect.center=(random.randint(40,SCREEN_WIDTH-40),0)
+    if c8.draw_flag:
+        screen.fill("black")
 
-#       def move(self):
-#         self.rect.move_ip(0,10)
-#         if (self.rect.bottom > 600):
-#             self.rect.top = 0
-#             self.rect.center = (random.randint(30, 370), 0)
+        for y in range(0, 32):
+            for x in range(0, 64):
+                if c8.gfx[x + y * 64]:
+                    pygame.draw.rect(screen,
+                                     "white",
+                                     pygame.Rect(x * 10, y * 10, 10, 10),
+                                     0)
 
-#       def draw(self, surface):
-#         surface.blit(self.image, self.rect)
+        pygame.display.flip()
 
+    dt = clock.tick(60) / 1000
 
-# class Player(pygame.sprite.Sprite):
-#     def __init__(self):
-#         super().__init__()
-#         self.image = pygame.image.load("player.png")
-#         self.rect = self.image.get_rect()
-#         self.rect.center = (160, 520)
-
-#     def update(self):
-#         pressed_keys = pygame.key.get_pressed()
-#        #if pressed_keys[K_UP]:
-#             #self.rect.move_ip(0, -5)
-#        #if pressed_keys[K_DOWN]:
-#             #self.rect.move_ip(0,5)
-
-#         if self.rect.left > 0:
-#               if pressed_keys[K_LEFT]:
-#                   self.rect.move_ip(-5, 0)
-#         if self.rect.right < SCREEN_WIDTH:
-#               if pressed_keys[K_RIGHT]:
-#                   self.rect.move_ip(5, 0)
-
-#     def draw(self, surface):
-#         surface.blit(self.image, self.rect)
-
-
-# P1 = Player()
-# E1 = Enemy()
-
-# while True:
-#     for event in pygame.event.get():
-#         if event.type == QUIT:
-#             pygame.quit()
-#             sys.exit()
-#     P1.update()
-#     E1.move()
-
-#     DISPLAYSURF.fill(WHITE)
-#     P1.draw(DISPLAYSURF)
-#     E1.draw(DISPLAYSURF)
-
-#     pygame.display.update()
-#     FramePerSec.tick(FPS)
+pygame.quit()

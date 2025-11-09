@@ -64,11 +64,17 @@ class Chip8:
                     print()
 
     def emulate_cycle(self):
+        self.draw_flag = False
         self.fetch_opcode()
         print(hex(self.opcode))
         self.pc += 2
         self.decode_opcode()
-        # update timers
+
+        if self.delay_timer > 0:
+            self.delay_timer -= 1
+
+        if self.sound_timer > 0:
+            self.sound_timer -= 1
 
     def fetch_opcode(self):
         self.opcode = self.memory[self.pc] << 8 | self.memory[self.pc + 1]
@@ -273,7 +279,7 @@ class Chip8:
         else:
             self.regs[0xF] = 0x0
 
-    # 8XY5
+    # 8XY5 TESTED
     def sub(self):
         """
         set vF = 1 if vX > vY, set vX = vX - vY
@@ -287,7 +293,7 @@ class Chip8:
         else:
             self.regs[0xF] = 0x0
 
-    # 8XY6
+    # 8XY6 TESTED
     def shr(self):
         """
         set vX = vY
@@ -313,7 +319,7 @@ class Chip8:
         else:
             self.regs[0xF] = 0x0
 
-    # 8XYE
+    # 8XYE TESTED
     def shl(self):
         """
         set vX = vY
@@ -375,10 +381,13 @@ class Chip8:
 
             for col in range(0, 8):
                 if (pixel & (0x80 >> col)) != 0:
-                    if self.gfx[(x_pos + col + ((y_pos + row) * 64))] == 1:
+                    pix = x_pos + col + ((y_pos + row) * 64)
+                    print('>>>>>>>>', pix % 2048)
+
+                    if self.gfx[pix % 2048] == 1:
                         self.regs[0xF] = 1
 
-                    self.gfx[x_pos + col + ((y_pos + row) * 64)] ^= 1
+                    self.gfx[pix % 2048] ^= 1
 
         self.draw_flag = True
 
@@ -403,7 +412,7 @@ class Chip8:
         """
         set vX = delay timer value
         """
-        self.regs[self.vxi] = self.delay_timer
+        self.regs[self.vxi] = self.delay_timer & 0xFF
 
     # FX0A
     def load_key_pressed(self):
@@ -416,12 +425,14 @@ class Chip8:
         """
         set delay timer value = vX
         """
+        self.delay_timer = self.regs[self.vxi] & 0xFF
 
     # FX18
     def set_sound(self):
         """
         set sound timer value = vX
         """
+        self.sound_timer = self.regs[self.vxi] & 0xFF
 
     # FX1E TESTED
     def add_index(self):
