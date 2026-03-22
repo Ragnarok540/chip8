@@ -63,10 +63,16 @@ class Chip8:
                 if x == 63:
                     print()
 
+    def press_key(self, key):
+        self.keys[key] = 1
+
+    def release_key(self, key):
+        self.keys[key] = 0
+
     def emulate_cycle(self):
         self.draw_flag = False
         self.fetch_opcode()
-        print(hex(self.opcode))
+        # print(hex(self.opcode))
         self.pc += 2
         self.decode_opcode()
 
@@ -382,7 +388,7 @@ class Chip8:
             for col in range(0, 8):
                 if (pixel & (0x80 >> col)) != 0:
                     pix = x_pos + col + ((y_pos + row) * 64)
-                    print('>>>>>>>>', pix % 2048)
+                    # print('>>>>>>>>', pix % 2048)
 
                     if self.gfx[pix % 2048] == 1:
                         self.regs[0xF] = 1

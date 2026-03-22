@@ -1,54 +1,114 @@
-import pygame
-from chip8 import Chip8
+import curses
+from curses import wrapper
+from curses.textpad import rectangle
 
-c8 = Chip8()
-c8.load_rom('6-keypad.ch8')
 
-pygame.init()
-screen = pygame.display.set_mode((640, 320))
-clock = pygame.time.Clock()
-running = True
-dt = 0
+def main(stdscr):
+    curses.curs_set(0)
 
-while running:
-    c8.emulate_cycle()
+    curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    GREEN_AND_BLACK = curses.color_pair(1)
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+    stdscr.nodelay(True)
 
-    keys = pygame.key.get_pressed()
+    y = 32
+    x = 64
 
-    c8.keys[0x0] = keys[pygame.K_0]
-    c8.keys[0x1] = keys[pygame.K_1]
-    c8.keys[0x2] = keys[pygame.K_2]
-    c8.keys[0x3] = keys[pygame.K_3]
-    c8.keys[0x4] = keys[pygame.K_4]
-    c8.keys[0x5] = keys[pygame.K_5]
-    c8.keys[0x6] = keys[pygame.K_6]
-    c8.keys[0x7] = keys[pygame.K_7]
-    c8.keys[0x8] = keys[pygame.K_8]
-    c8.keys[0x9] = keys[pygame.K_9]
-    c8.keys[0xA] = keys[pygame.K_a]
-    c8.keys[0xB] = keys[pygame.K_b]
-    c8.keys[0xC] = keys[pygame.K_c]
-    c8.keys[0xD] = keys[pygame.K_d]
-    c8.keys[0xE] = keys[pygame.K_e]
-    c8.keys[0xF] = keys[pygame.K_f]
+    # counter_win = curses.newwin(6, 0, y + 6, x)
 
-    if c8.draw_flag:
-        screen.fill("black")
+    while True:
+        try:
+            key = stdscr.getkey()
+        except Exception:
+            key = None
 
-        for y in range(0, 32):
-            for x in range(0, 64):
-                if c8.gfx[x + y * 64]:
-                    pygame.draw.rect(screen,
-                                     "white",
-                                     pygame.Rect(x * 10, y * 10, 10, 10),
-                                     0)
+        if key:
+            stdscr.clear()
 
-        pygame.display.flip()
+            rectangle(stdscr, 0, 0, 5, 8)
+            rectangle(stdscr, 6, 0, y + 6, x)
 
-    dt = clock.tick(60) / 1000
+            if key == '1':
+                stdscr.addstr(1, 1, '1', GREEN_AND_BLACK | curses.A_BOLD)
+            else:
+                stdscr.addstr(1, 1, '1', GREEN_AND_BLACK | curses.A_DIM)
 
-pygame.quit()
+            if key == '2':
+                stdscr.addstr(1, 3, '2', GREEN_AND_BLACK | curses.A_BOLD)
+            else:
+                stdscr.addstr(1, 3, '2', GREEN_AND_BLACK | curses.A_DIM)
+
+            if key == '3':
+                stdscr.addstr(1, 5, '3', GREEN_AND_BLACK | curses.A_BOLD)
+            else:
+                stdscr.addstr(1, 5, '3', GREEN_AND_BLACK | curses.A_DIM)
+
+            if key == '4':
+                stdscr.addstr(1, 7, 'C', GREEN_AND_BLACK | curses.A_BOLD)
+            else:
+                stdscr.addstr(1, 7, 'C', GREEN_AND_BLACK | curses.A_DIM)
+
+            if key == 'q':
+                stdscr.addstr(2, 1, '4', GREEN_AND_BLACK | curses.A_BOLD)
+            else:
+                stdscr.addstr(2, 1, '4', GREEN_AND_BLACK | curses.A_DIM)
+
+            if key == 'w':
+                stdscr.addstr(2, 3, '5', GREEN_AND_BLACK | curses.A_BOLD)
+            else:
+                stdscr.addstr(2, 3, '5', GREEN_AND_BLACK | curses.A_DIM)
+
+            if key == 'e':
+                stdscr.addstr(2, 5, '6', GREEN_AND_BLACK | curses.A_BOLD)
+            else:
+                stdscr.addstr(2, 5, '6', GREEN_AND_BLACK | curses.A_DIM)
+
+            if key == 'r':
+                stdscr.addstr(2, 7, 'D', GREEN_AND_BLACK | curses.A_BOLD)
+            else:
+                stdscr.addstr(2, 7, 'D', GREEN_AND_BLACK | curses.A_DIM)
+
+            if key == 'a':
+                stdscr.addstr(3, 1, '7', GREEN_AND_BLACK | curses.A_BOLD)
+            else:
+                stdscr.addstr(3, 1, '7', GREEN_AND_BLACK | curses.A_DIM)
+
+            if key == 's':
+                stdscr.addstr(3, 3, '8', GREEN_AND_BLACK | curses.A_BOLD)
+            else:
+                stdscr.addstr(3, 3, '8', GREEN_AND_BLACK | curses.A_DIM)
+
+            if key == 'd':
+                stdscr.addstr(3, 5, '9', GREEN_AND_BLACK | curses.A_BOLD)
+            else:
+                stdscr.addstr(3, 5, '9', GREEN_AND_BLACK | curses.A_DIM)
+
+            if key == 'f':
+                stdscr.addstr(3, 7, 'E', GREEN_AND_BLACK | curses.A_BOLD)
+            else:
+                stdscr.addstr(3, 7, 'E', GREEN_AND_BLACK | curses.A_DIM)
+
+            if key == 'z':
+                stdscr.addstr(4, 1, 'A', GREEN_AND_BLACK | curses.A_BOLD)
+            else:
+                stdscr.addstr(4, 1, 'A', GREEN_AND_BLACK | curses.A_DIM)
+
+            if key == 'x':
+                stdscr.addstr(4, 3, '0', GREEN_AND_BLACK | curses.A_BOLD)
+            else:
+                stdscr.addstr(4, 3, '0', GREEN_AND_BLACK | curses.A_DIM)
+
+            if key == 'c':
+                stdscr.addstr(4, 5, 'B', GREEN_AND_BLACK | curses.A_BOLD)
+            else:
+                stdscr.addstr(4, 5, 'B', GREEN_AND_BLACK | curses.A_DIM)
+
+            if key == 'v':
+                stdscr.addstr(4, 7, 'F', GREEN_AND_BLACK | curses.A_BOLD)
+            else:
+                stdscr.addstr(4, 7, 'F', GREEN_AND_BLACK | curses.A_DIM)
+
+            stdscr.refresh()
+
+
+wrapper(main)
