@@ -425,6 +425,10 @@ class Chip8:
         """
         set vX = key pressed
         """
+        for key in range(0, 16):
+            if self.keys[key]:
+                self.regs[self.vxi] = key & 0xFF
+                break
 
     # FX15
     def set_delay(self):
