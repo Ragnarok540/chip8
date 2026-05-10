@@ -1,14 +1,16 @@
+#![allow(unused)]
+
 mod chip8;
 
 use crate::chip8::Chip8;
 
 fn main() {
-    println!("hello world");
-
     let mut chip = Chip8::new();
-    chip.opcode = 0x000E;
-    // let vxi = 
-    chip.decode_opcode();
-    // println!("{vxi:#x}");
-    // println!("{vxi}");
+    chip.load_rom("roms/1-chip8-logo.ch8");
+
+    for _ in 0..40 {
+        chip.emulate_cycle();
+    }
+
+    chip.draw_console();
 }

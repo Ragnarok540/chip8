@@ -1,14 +1,14 @@
 pub struct Chip8 {
-    pub opcode: u16,
-    memory: [u8; 4096],
+    pub opcode: usize,
+    memory: [usize; 4096],
     gfx: [u8; 64 * 32], // graphics
-    v: [u8; 16],        // registers
-    i: u16,             // index
-    pc: u16,            // program counter
+    v: [usize; 16],     // registers
+    i: usize,           // index
+    pc: usize,          // program counter
     delay_timer: u8,
     sound_timer: u8,
-    stack: [u8; 16],
-    sp: u8,             // stack pointer
+    stack: [usize; 16],
+    sp: usize,          // stack pointer
     key: [u8; 16],
 }
 
@@ -29,36 +29,168 @@ impl Chip8 {
         }
     }
 
-    fn vxi(&self) -> u16 {
+    fn vxi(&self) -> usize {
         (self.opcode & 0x0F00) >> 8
     }
 
-    fn vyi(&self) -> u16 {
+    fn vyi(&self) -> usize {
         (self.opcode & 0x00F0) >> 4
     }
 
-    fn n(&self) -> u16 {
+    fn n(&self) -> usize {
         self.opcode & 0x000F
     }
 
-    fn nn(&self) -> u16 {
+    fn nn(&self) -> usize {
         self.opcode & 0x00FF
     }
 
-    fn nnn(&self) -> u16 {
+    fn nnn(&self) -> usize {
         self.opcode & 0x0FFF
     }
 
-    pub fn decode_opcode(&self) {
+    pub fn load_rom(&mut self, path: &str) {
+        let bytes = std::fs::read(path).unwrap();
+        let mut counter = 0;
+
+        for byte in bytes.chunks_exact(1) {
+            self.memory[self.pc + counter] = byte[0] as usize;
+            counter += 1;
+        }
+    }
+
+    pub fn emulate_cycle(&mut self) {
+        self.fetch_opcode();
+        self.pc += 2;
+        self.decode_opcode();
+    }
+
+    pub fn draw_console(&self) {
+        for y in 0..32 {
+            for x in 0..64 {
+                if self.gfx[x + y * 64] == 1 {
+                    print!("█");
+                } else {
+                    print!(" ");
+                }
+                if x == 63 {
+                    println!();
+                }
+            }
+        } 
+    }
+
+    fn fetch_opcode(&mut self) {
+        self.opcode = self.memory[self.pc] << 8 | self.memory[self.pc + 1];
+    }
+
+    fn decode_opcode(&mut self) {
         match self.opcode & 0xF000 {
             0x000 => {
                 match self.opcode & 0x00FF {
-                    0x00E0 => println!("clear_screen"),
-                    0x00EE => println!("ret"),
-                    _ => panic!("decode error: {0:#x}", self.opcode),
+                    0x00E0 => self.clear_screen(),
+                    0x00EE => self.ret(),
+                    _ => panic!("opcode could not be decoded: {0:#x}", self.opcode),
                 }
             },
-            _ => panic!("decode error: {0:#x}", self.opcode),
+            0x1000 => self.goto(),
+            0x2000 => println!("call"),
+            0x3000 => println!("skip_equal"),
+            0x4000 => println!("skip_not_equal"),
+            0x5000 => println!("skip_equal_reg"),
+            0x6000 => self.load_reg(),
+            0x7000 => println!("add_constant"),
+            0x8000 => {
+                match self.opcode & 0x000F {
+                    0x0000 => println!("set_reg"),
+                    0x0001 => println!("bitwise_or"),
+                    0x0002 => println!("bitwise_and"),
+                    0x0003 => println!("bitwise_xor"),
+                    0x0004 => println!("add"),
+                    0x0005 => println!("sub"),
+                    0x0006 => println!("shr"),
+                    0x0007 => println!("subn"),
+                    0x000E => println!("shl"),
+                    _ => panic!("opcode could not be decoded: {0:#x}", self.opcode),
+                }
+            },
+            0x9000 => println!("skip_reg_not_equal"),
+            0xA000 => self.load_index(),
+            0xB000 => println!("jump"),
+            0xC000 => println!("random_value"),
+            0xD000 => self.draw(),
+            0xE000 => {
+                match self.opcode & 0x00FF {
+                    0x009E => println!("skip_key_pressed"),
+                    0x00A1 => println!("skip_key_not_pressed"),
+                    _ => panic!("opcode could not be decoded: {0:#x}", self.opcode),
+                }
+            },
+            0xF000 => {
+                match self.opcode & 0x00FF {
+                    0x0007 => println!("load_delay"),
+                    0x000A => println!("load_key_pressed"),
+                    0x0015 => println!("set_delay"),
+                    0x0018 => println!("set_sound"),
+                    0x001E => println!("add_index"),
+                    0x0029 => println!("load_hex_sprite"),
+                    0x0033 => println!("store_bcd"),
+                    0x0055 => println!("store_regs"),
+                    0x0065 => println!("read_regs"),
+                    _ => panic!("opcode could not be decoded: {0:#x}", self.opcode),
+                }
+            },
+            _ => panic!("opcode could not be decoded: {0:#x}", self.opcode),
+        }
+    }
+
+    // 00E0 TESTED
+    fn clear_screen(&mut self) {
+        self.gfx = [0; 64 * 32];
+    }
+
+    // 00EE
+    fn ret(&mut self) {
+        self.sp -= 1;
+        self.pc = self.stack[self.sp];
+    }
+
+    // 1NNN
+    fn goto(&mut self) {
+        self.pc = self.nnn();
+    }
+
+    // 6XNN TESTED
+    fn load_reg(&mut self) {
+        self.v[self.vxi()] = self.nn();
+    }
+
+    // ANNN TESTED
+    fn load_index(&mut self) {
+        self.i = self.nnn();
+    }
+
+    // DXYN TESTED
+    fn draw(&mut self) {
+        let x_pos = self.v[self.vxi()] % 64;
+        let y_pos = self.v[self.vyi()] % 32;
+        let height = self.n();
+        self.v[0xF] = 0;
+
+        for row in 0..height {
+            let pixel = self.memory[self.i + row];
+
+            for col in 0..8 {
+                if (pixel & (0x80 >> col)) != 0 {
+                    let pix = x_pos + col + ((y_pos + row) * 64);
+
+                    if self.gfx[pix % 2048] == 1 {
+                        self.v[0xF] = 1;
+                    }
+
+                    self.gfx[pix % 2048] ^= 1
+                }
+            }
         }
     }
 }
