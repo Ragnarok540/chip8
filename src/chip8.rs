@@ -219,7 +219,7 @@ impl Chip8 {
         self.v[self.vxi()] = self.v[self.vxi()] ^ self.v[self.vyi()];
     }
 
-    // 8XY4
+    // 8XY4 TESTED
     fn add(&mut self) {
         let val = self.v[self.vxi()] + self.v[self.vyi()];
         self.v[self.vxi()] = val & 0xFF;
