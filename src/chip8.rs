@@ -99,7 +99,7 @@ impl Chip8 {
             0x4000 => println!("skip_not_equal"),
             0x5000 => println!("skip_equal_reg"),
             0x6000 => self.load_reg(),
-            0x7000 => println!("add_constant"),
+            0x7000 => self.add_constant(),
             0x8000 => {
                 match self.opcode & 0x000F {
                     0x0000 => println!("set_reg"),
@@ -155,7 +155,7 @@ impl Chip8 {
         self.pc = self.stack[self.sp];
     }
 
-    // 1NNN
+    // 1NNN TESTED
     fn goto(&mut self) {
         self.pc = self.nnn();
     }
@@ -163,6 +163,12 @@ impl Chip8 {
     // 6XNN TESTED
     fn load_reg(&mut self) {
         self.v[self.vxi()] = self.nn();
+    }
+
+    // 7XNN 
+    fn add_constant(&mut self) {
+        let val = self.v[self.vxi()] + self.nn();
+        self.v[self.vxi()] = val & 0xFF;
     }
 
     // ANNN TESTED
