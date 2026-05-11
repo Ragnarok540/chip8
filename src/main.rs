@@ -26,12 +26,24 @@ fn test_rom_2() {
     chip.draw_console();
 }
 
+fn test_rom_3() {
+    let mut chip = Chip8::new();
+    chip.load_rom("roms/3-corax+.ch8");
+
+    for _ in 0..307 {
+        chip.emulate_cycle();
+    }
+
+    chip.draw_console();
+}
+
 fn main() {
-    let test_rom = 2;
+    let test_rom = 3;
 
     match test_rom {
-        1 => rom1(),
-        2 => rom2(),
+        1 => test_rom_1(),
+        2 => test_rom_2(),
+        3 => test_rom_3(),
         _ => panic!("test rom does not exist!"),
     }
 

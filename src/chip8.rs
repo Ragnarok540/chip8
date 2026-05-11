@@ -94,27 +94,27 @@ impl Chip8 {
                 }
             },
             0x1000 => self.goto(),
-            0x2000 => println!("call"),
-            0x3000 => println!("skip_equal"),
-            0x4000 => println!("skip_not_equal"),
-            0x5000 => println!("skip_equal_reg"),
+            0x2000 => self.call(),
+            0x3000 => self.skip_equal(),
+            0x4000 => self.skip_not_equal(),
+            0x5000 => self.skip_equal_reg(),
             0x6000 => self.load_reg(),
             0x7000 => self.add_constant(),
             0x8000 => {
                 match self.opcode & 0x000F {
-                    0x0000 => println!("set_reg"),
-                    0x0001 => println!("bitwise_or"),
-                    0x0002 => println!("bitwise_and"),
-                    0x0003 => println!("bitwise_xor"),
-                    0x0004 => println!("add"),
-                    0x0005 => println!("sub"),
-                    0x0006 => println!("shr"),
-                    0x0007 => println!("subn"),
-                    0x000E => println!("shl"),
+                    0x0000 => self.set_reg(),
+                    0x0001 => self.bitwise_or(),
+                    0x0002 => self.bitwise_and(),
+                    0x0003 => self.bitwise_xor(),
+                    0x0004 => self.add(),
+                    0x0005 => self.sub(),
+                    0x0006 => self.shr(),
+                    0x0007 => self.subn(),
+                    0x000E => self.shl(),
                     _ => panic!("opcode could not be decoded: {0:#x}", self.opcode),
                 }
             },
-            0x9000 => println!("skip_reg_not_equal"),
+            0x9000 => self.skip_reg_not_equal(),
             0xA000 => self.load_index(),
             0xB000 => println!("jump"),
             0xC000 => println!("random_value"),
@@ -132,11 +132,11 @@ impl Chip8 {
                     0x000A => println!("load_key_pressed"),
                     0x0015 => println!("set_delay"),
                     0x0018 => println!("set_sound"),
-                    0x001E => println!("add_index"),
+                    0x001E => self.add_index(),
                     0x0029 => println!("load_hex_sprite"),
-                    0x0033 => println!("store_bcd"),
-                    0x0055 => println!("store_regs"),
-                    0x0065 => println!("read_regs"),
+                    0x0033 => self.store_bcd(),
+                    0x0055 => self.store_regs(),
+                    0x0065 => self.read_regs(),
                     _ => panic!("opcode could not be decoded: {0:#x}", self.opcode),
                 }
             },
@@ -149,7 +149,7 @@ impl Chip8 {
         self.gfx = [0; 64 * 32];
     }
 
-    // 00EE
+    // 00EE TESTED
     fn ret(&mut self) {
         self.sp -= 1;
         self.pc = self.stack[self.sp];
@@ -160,15 +160,121 @@ impl Chip8 {
         self.pc = self.nnn();
     }
 
+    // 2NNN TESTED
+    fn call(&mut self) {
+        self.stack[self.sp] = self.pc;
+        self.sp += 1;
+        self.pc = self.nnn();
+    }
+
+    // 3XNN TESTED
+    fn skip_equal(&mut self) {
+        if self.v[self.vxi()] == self.nn() {
+            self.pc += 2;
+        }
+    }
+
+    // 4XNN TESTED
+    fn skip_not_equal(&mut self) {
+        if self.v[self.vxi()] != self.nn() {
+            self.pc += 2;
+        }
+    }
+
+    // 5XY0 TESTED
+    fn skip_equal_reg(&mut self) {
+        if self.v[self.vxi()] == self.v[self.vyi()] {
+            self.pc += 2;
+        }
+    }
+
     // 6XNN TESTED
     fn load_reg(&mut self) {
         self.v[self.vxi()] = self.nn();
     }
 
-    // 7XNN 
+    // 7XNN TESTED
     fn add_constant(&mut self) {
         let val = self.v[self.vxi()] + self.nn();
         self.v[self.vxi()] = val & 0xFF;
+    }
+
+    // 8XY0 TESTED
+    fn set_reg(&mut self) {
+        self.v[self.vxi()] = self.v[self.vyi()];
+    }
+
+    // 8XY1 TESTED
+    fn bitwise_or(&mut self) {
+        self.v[self.vxi()] = self.v[self.vxi()] | self.v[self.vyi()];
+    }
+
+    // 8XY2 TESTED
+    fn bitwise_and(&mut self) {
+        self.v[self.vxi()] = self.v[self.vxi()] & self.v[self.vyi()];
+    }
+
+    // 8XY3 TESTED
+    fn bitwise_xor(&mut self) {
+        self.v[self.vxi()] = self.v[self.vxi()] ^ self.v[self.vyi()];
+    }
+
+    // 8XY4
+    fn add(&mut self) {
+        let val = self.v[self.vxi()] + self.v[self.vyi()];
+        self.v[self.vxi()] = val & 0xFF;
+
+        if val > 0xFF {
+            self.v[0xF] = 0x1;
+        } else {
+            self.v[0xF] = 0x0;
+        }           
+    }
+
+    // 8XY5 TESTED
+    fn sub(&mut self) {
+        let val_0 = self.v[self.vxi()];
+        let val_1 = self.v[self.vxi()] as isize - self.v[self.vyi()] as isize;
+        self.v[self.vxi()] = val_1 as usize & 0xFF;
+
+        if val_0 >= self.v[self.vyi()] {
+            self.v[0xF] = 0x1;
+        } else {
+            self.v[0xF] = 0x0;
+        }
+    }
+
+    // 8XY6 TESTED
+    fn shr(&mut self) {
+        let val = self.v[self.vxi()];
+        self.v[self.vxi()] = (self.v[self.vxi()] >> 1) & 0xFF;
+        self.v[0xF] = val & 0x1;
+    }
+
+    // 8XY7 TESTED
+    fn subn(&mut self) {
+        let val = self.v[self.vyi()] as isize - self.v[self.vxi()] as isize;
+        self.v[self.vxi()] = val as usize & 0xFF;
+
+        if self.v[self.vyi()] > self.v[self.vxi()] {
+            self.v[0xF] = 0x1;
+        } else {
+            self.v[0xF] = 0x0;
+        }  
+    }
+
+    // 8XYE TESTED
+    fn shl(&mut self) {
+        let val = self.v[self.vxi()];
+        self.v[self.vxi()] = (self.v[self.vxi()] << 1) & 0xFF;
+        self.v[0xF] = (val & 0x80) >> 7;
+    }
+
+    // 9XY0 TESTED
+    fn skip_reg_not_equal(&mut self) {
+        if self.v[self.vxi()] != self.v[self.vyi()] {
+            self.pc += 2;
+        } 
     }
 
     // ANNN TESTED
@@ -194,9 +300,39 @@ impl Chip8 {
                         self.v[0xF] = 1;
                     }
 
-                    self.gfx[pix % 2048] ^= 1
+                    self.gfx[pix % 2048] ^= 1;
                 }
             }
+        }
+    }
+
+    // FX1E TESTED
+    fn add_index(&mut self) {
+        self.i = self.i + self.v[self.vxi()];
+    }
+
+    // FX33 TESTED
+    fn store_bcd(&mut self) {
+        let hundred = self.v[self.vxi()] / 100 % 10;
+        let ten = self.v[self.vxi()] / 10 % 10;
+        let one = self.v[self.vxi()] % 10;
+
+        self.memory[self.i] = hundred;
+        self.memory[self.i + 1] = ten;
+        self.memory[self.i + 2] = one;
+    }
+
+    // FX55 TESTED
+    fn store_regs(&mut self) {
+        for i in 0..(self.vxi() + 1) {
+            self.memory[self.i + i] = self.v[i];
+        }
+    }
+
+    // FX65 TESTED
+    fn read_regs(&mut self) {
+        for i in 0..(self.vxi() + 1) {
+            self.v[i] = self.memory[self.i + i];
         }
     }
 }
