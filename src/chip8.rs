@@ -1,23 +1,27 @@
+use rand::prelude::*;
+
 pub struct Chip8 {
-    pub opcode: usize,
+    pub gfx: [u8; 64 * 32], // graphics
+    pub key: [bool; 16],    // keyboard
+    opcode: usize,
     memory: [usize; 4096],
-    gfx: [u8; 64 * 32], // graphics
-    v: [usize; 16],     // registers
-    i: usize,           // index
-    pc: usize,          // program counter
+    v: [usize; 16],         // registers
+    i: usize,               // index
+    pc: usize,              // program counter
     delay_timer: u8,
     sound_timer: u8,
     stack: [usize; 16],
-    sp: usize,          // stack pointer
-    key: [u8; 16],
+    sp: usize,              // stack pointer
+    rng: ThreadRng,
 }
 
 impl Chip8 {
     pub fn new() -> Self {
         Self {
+            gfx: [0; 64 * 32],
+            key: [false; 16],
             opcode: 0,
             memory: [0; 4096],
-            gfx: [0; 64 * 32],
             v: [0; 16],
             i: 0,
             pc: 0x200,
@@ -25,37 +29,21 @@ impl Chip8 {
             sound_timer: 0,
             stack: [0; 16],
             sp: 0,
-            key: [0; 16],
+            rng: rand::rng(),
         }
     }
 
-    fn vxi(&self) -> usize {
-        (self.opcode & 0x0F00) >> 8
-    }
-
-    fn vyi(&self) -> usize {
-        (self.opcode & 0x00F0) >> 4
-    }
-
-    fn n(&self) -> usize {
-        self.opcode & 0x000F
-    }
-
-    fn nn(&self) -> usize {
-        self.opcode & 0x00FF
-    }
-
-    fn nnn(&self) -> usize {
-        self.opcode & 0x0FFF
-    }
-
     pub fn load_rom(&mut self, path: &str) {
-        let bytes = std::fs::read(path).unwrap();
         let mut counter = 0;
-
-        for byte in bytes.chunks_exact(1) {
-            self.memory[self.pc + counter] = byte[0] as usize;
-            counter += 1;
+        
+        match std::fs::read(path) {
+            Err(why) => panic!("{:?}", why),
+            Ok(bytes) => {
+                for byte in bytes.chunks_exact(1) {
+                    self.memory[self.pc + counter] = byte[0] as usize;
+                    counter += 1;
+                }
+            }
         }
     }
 
@@ -78,6 +66,26 @@ impl Chip8 {
                 }
             }
         } 
+    }
+
+    fn vxi(&self) -> usize {
+        (self.opcode & 0x0F00) >> 8
+    }
+
+    fn vyi(&self) -> usize {
+        (self.opcode & 0x00F0) >> 4
+    }
+
+    fn n(&self) -> usize {
+        self.opcode & 0x000F
+    }
+
+    fn nn(&self) -> usize {
+        self.opcode & 0x00FF
+    }
+
+    fn nnn(&self) -> usize {
+        self.opcode & 0x0FFF
     }
 
     fn fetch_opcode(&mut self) {
@@ -116,20 +124,20 @@ impl Chip8 {
             },
             0x9000 => self.skip_reg_not_equal(),
             0xA000 => self.load_index(),
-            0xB000 => println!("jump"),
-            0xC000 => println!("random_value"),
+            0xB000 => self.jump(),
+            0xC000 => self.random_value(),
             0xD000 => self.draw(),
             0xE000 => {
                 match self.opcode & 0x00FF {
-                    0x009E => println!("skip_key_pressed"),
-                    0x00A1 => println!("skip_key_not_pressed"),
+                    0x009E => self.skip_key_pressed(),
+                    0x00A1 => self.skip_key_not_pressed(),
                     _ => panic!("opcode could not be decoded: {0:#x}", self.opcode),
                 }
             },
             0xF000 => {
                 match self.opcode & 0x00FF {
                     0x0007 => println!("load_delay"),
-                    0x000A => println!("load_key_pressed"),
+                    0x000A => self.load_key_pressed(),
                     0x0015 => println!("set_delay"),
                     0x0018 => println!("set_sound"),
                     0x001E => self.add_index(),
@@ -282,6 +290,17 @@ impl Chip8 {
         self.i = self.nnn();
     }
 
+    // BNNN
+    fn jump(&mut self) {
+        self.pc = self.v[0] + self.nnn()
+    }
+
+    // CXNN
+    fn random_value(&mut self) {
+        let result = self.rng.random_range(0x0..0xFF) & self.nn();
+        self.v[self.vxi()] = result;
+    }
+
     // DXYN TESTED
     fn draw(&mut self) {
         let x_pos = self.v[self.vxi()] % 64;
@@ -304,6 +323,30 @@ impl Chip8 {
                 }
             }
         }
+    }
+
+    // EX9E
+    fn skip_key_pressed(&mut self) {
+        if self.key[self.v[self.vxi()]] {
+            self.pc += 2;
+        }
+    }
+
+    // EXA1
+    fn skip_key_not_pressed(&mut self) {
+        if !self.key[self.v[self.vxi()]] {
+            self.pc += 2;
+        }
+    }
+
+    // FX0A
+    fn load_key_pressed(&mut self) {
+        for k in 0..16 {
+            if self.key[k] {
+                self.v[self.vxi()] = k & 0xFF;
+                break;
+            }
+        }       
     }
 
     // FX1E TESTED
