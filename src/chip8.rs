@@ -2,14 +2,14 @@ use rand::prelude::*;
 
 pub struct Chip8 {
     pub gfx: [u8; 64 * 32], // graphics
-    pub key: [bool; 16],    // keyboard
+    pub key: [bool; 16],    // keypad
     opcode: usize,
     memory: [usize; 4096],
     v: [usize; 16],         // registers
     i: usize,               // index
     pc: usize,              // program counter
-    delay_timer: u8,
-    sound_timer: u8,
+    delay_timer: usize,
+    sound_timer: usize,
     stack: [usize; 16],
     sp: usize,              // stack pointer
     rng: ThreadRng,
@@ -51,6 +51,14 @@ impl Chip8 {
         self.fetch_opcode();
         self.pc += 2;
         self.decode_opcode();
+
+        if self.delay_timer > 0 {
+            self.delay_timer -= 1;
+        }
+
+        if self.sound_timer > 0 {
+            self.sound_timer -= 1;
+        }
     }
 
     pub fn draw_console(&self) {
@@ -136,10 +144,10 @@ impl Chip8 {
             },
             0xF000 => {
                 match self.opcode & 0x00FF {
-                    0x0007 => println!("load_delay"),
+                    0x0007 => self.load_delay(),
                     0x000A => self.load_key_pressed(),
-                    0x0015 => println!("set_delay"),
-                    0x0018 => println!("set_sound"),
+                    0x0015 => self.set_delay(),
+                    0x0018 => self.set_sound(),
                     0x001E => self.add_index(),
                     0x0029 => println!("load_hex_sprite"),
                     0x0033 => self.store_bcd(),
@@ -325,18 +333,23 @@ impl Chip8 {
         }
     }
 
-    // EX9E
+    // EX9E TESTED
     fn skip_key_pressed(&mut self) {
         if self.key[self.v[self.vxi()]] {
             self.pc += 2;
         }
     }
 
-    // EXA1
+    // EXA1 TESTED
     fn skip_key_not_pressed(&mut self) {
         if !self.key[self.v[self.vxi()]] {
             self.pc += 2;
         }
+    }
+
+    // FX07
+    fn load_delay(&mut self) {
+        self.v[self.vxi()] = self.delay_timer & 0xFF
     }
 
     // FX0A
@@ -347,6 +360,16 @@ impl Chip8 {
                 break;
             }
         }       
+    }
+
+    // FX15
+    fn set_delay(&mut self) {
+        self.delay_timer = self.v[self.vxi()] & 0xFF
+    }
+
+    // FX18
+    fn set_sound(&mut self) {
+        self.sound_timer = self.v[self.vxi()] & 0xFF
     }
 
     // FX1E TESTED
