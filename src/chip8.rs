@@ -3,6 +3,9 @@ use rand::prelude::*;
 pub struct Chip8 {
     pub gfx: [u8; 64 * 32], // graphics
     pub key: [bool; 16],    // keypad
+    pub should_draw: bool,
+    wait_for_key: bool,
+    keypad_register: usize,
     opcode: usize,
     memory: [usize; 4096],
     v: [usize; 16],         // registers
@@ -20,6 +23,9 @@ impl Chip8 {
         Self {
             gfx: [0; 64 * 32],
             key: [false; 16],
+            should_draw: false,
+            wait_for_key: false,
+            keypad_register: 0,
             opcode: 0,
             memory: [0; 4096],
             v: [0; 16],
@@ -48,16 +54,27 @@ impl Chip8 {
     }
 
     pub fn emulate_cycle(&mut self) {
-        self.fetch_opcode();
-        self.pc += 2;
-        self.decode_opcode();
-
         if self.delay_timer > 0 {
             self.delay_timer -= 1;
         }
 
         if self.sound_timer > 0 {
             self.sound_timer -= 1;
+        }
+
+        if self.wait_for_key {
+            for k in 0..16 {
+                if self.key[k] {
+                    self.wait_for_key = false;
+                    self.v[self.keypad_register] = k & 0xFF;
+                    self.key = [false; 16];
+                    break;
+                }
+            }
+        } else {
+            self.fetch_opcode();
+            self.pc += 2;
+            self.decode_opcode();
         }
     }
 
@@ -163,6 +180,7 @@ impl Chip8 {
     // 00E0 TESTED
     fn clear_screen(&mut self) {
         self.gfx = [0; 64 * 32];
+        self.should_draw = true;
     }
 
     // 00EE TESTED
@@ -223,16 +241,19 @@ impl Chip8 {
     // 8XY1 TESTED
     fn bitwise_or(&mut self) {
         self.v[self.vxi()] = self.v[self.vxi()] | self.v[self.vyi()];
+        self.v[0xF] = 0x0; // xF reset quirk
     }
 
     // 8XY2 TESTED
     fn bitwise_and(&mut self) {
         self.v[self.vxi()] = self.v[self.vxi()] & self.v[self.vyi()];
+        self.v[0xF] = 0x0; // xF reset quirk
     }
 
     // 8XY3 TESTED
     fn bitwise_xor(&mut self) {
         self.v[self.vxi()] = self.v[self.vxi()] ^ self.v[self.vyi()];
+        self.v[0xF] = 0x0; // xF reset quirk
     }
 
     // 8XY4 TESTED
@@ -331,6 +352,8 @@ impl Chip8 {
                 }
             }
         }
+
+        self.should_draw = true;
     }
 
     // EX9E TESTED
@@ -352,14 +375,10 @@ impl Chip8 {
         self.v[self.vxi()] = self.delay_timer & 0xFF
     }
 
-    // FX0A
+    // FX0A TESTED
     fn load_key_pressed(&mut self) {
-        for k in 0..16 {
-            if self.key[k] {
-                self.v[self.vxi()] = k & 0xFF;
-                break;
-            }
-        }       
+        self.wait_for_key = true;
+        self.keypad_register = self.vxi();
     }
 
     // FX15
@@ -393,6 +412,7 @@ impl Chip8 {
         for i in 0..(self.vxi() + 1) {
             self.memory[self.i + i] = self.v[i];
         }
+        self.i += self.vxi(); // memory quirk
     }
 
     // FX65 TESTED
@@ -400,5 +420,6 @@ impl Chip8 {
         for i in 0..(self.vxi() + 1) {
             self.v[i] = self.memory[self.i + i];
         }
+        self.i += self.vxi(); // memory quirk
     }
 }

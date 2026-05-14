@@ -81,9 +81,9 @@ fn test_rom_4() {
     chip.draw_console();
 }
 
-fn test_rom_6() -> Result<()>  {
+fn test_rom(path: &str) -> Result<()>  {
     let mut chip = Chip8::new();
-    chip.load_rom("roms/6-keypad.ch8");
+    chip.load_rom(path);
 
     execute!(stdout(),
         EnterAlternateScreen,
@@ -110,8 +110,8 @@ fn test_rom_6() -> Result<()>  {
 
 fn chip8_loop(chip: &mut Chip8) -> Result<()> {
     let cycles_per_frame = 10;
-    const WAIT_TIME: Duration = time::Duration::from_millis(30);
-    const WAIT_TIME_2: Duration = time::Duration::from_millis(2);
+    const WAIT_TIME: Duration = time::Duration::from_millis(15);
+    const WAIT_TIME_2: Duration = time::Duration::from_millis(1);
 
     loop {
         for _ in 0..cycles_per_frame {
@@ -174,21 +174,24 @@ fn chip8_loop(chip: &mut Chip8) -> Result<()> {
             }
         }
 
-        execute!(stdout(),
-            Clear(ClearType::All),
-            cursor::MoveTo(0, 0),
-        )?;
+        if chip.should_draw {
+            execute!(stdout(),
+                Clear(ClearType::All),
+                cursor::MoveTo(0, 0),
+            )?;
 
-        for y in 0..32 {
-            for x in 0..64 {
-                if chip.gfx[x + y * 64] == 1 {
-                    print_crossterm(x, y);
+            for y in 0..32 {
+                for x in 0..64 {
+                    if chip.gfx[x + y * 64] == 1 {
+                        print_crossterm(x, y);
+                    }
                 }
             }
+
+            chip.should_draw = false;
         }
 
         thread::sleep(WAIT_TIME);
-        // println!("{:?}", chip.key);
     }
     Ok(())
 }
@@ -197,24 +200,24 @@ fn print_crossterm(x: usize, y: usize) -> Result<()> {
     execute!(
         stdout(),
         cursor::MoveTo(x as u16, y as u16),
-        // SetForegroundColor(Color::Blue),
-        // SetBackgroundColor(Color::Red),
         Print("█"),
-        // ResetColor
     )?;
 
     Ok(())
 }
 
 fn main() {
-    let test_rom = 6;
+    let rom = 6;
 
-    match test_rom {
+    match rom {
         1 => test_rom_1(),
         2 => test_rom_2(),
         3 => test_rom_3(),
         4 => test_rom_4(),
-        6 => test_rom_6().expect("something went wrong"),
+        5 => test_rom("roms/5-quirks.ch8").expect("something went wrong"),
+        6 => test_rom("roms/6-keypad.ch8").expect("something went wrong"),
+        7 => test_rom("roms/7-beep.ch8").expect("something went wrong"),
+        8 => test_rom("roms/pong.ch8").expect("something went wrong"),
         _ => panic!("test rom does not exist!"),
     }
 }
