@@ -12,7 +12,7 @@ pub struct Chip8 {
     i: usize,               // index
     pc: usize,              // program counter
     delay_timer: usize,
-    sound_timer: usize,
+    pub sound_timer: usize,
     stack: [usize; 16],
     sp: usize,              // stack pointer
     rng: ThreadRng,
@@ -283,6 +283,7 @@ impl Chip8 {
 
     // 8XY6 TESTED
     fn shr(&mut self) {
+        self.v[self.vxi()] = self.v[self.vyi()]; // shifting quirk
         let val = self.v[self.vxi()];
         self.v[self.vxi()] = (self.v[self.vxi()] >> 1) & 0xFF;
         self.v[0xF] = val & 0x1;
@@ -302,6 +303,7 @@ impl Chip8 {
 
     // 8XYE TESTED
     fn shl(&mut self) {
+        self.v[self.vxi()] = self.v[self.vyi()]; // shifting quirk
         let val = self.v[self.vxi()];
         self.v[self.vxi()] = (self.v[self.vxi()] << 1) & 0xFF;
         self.v[0xF] = (val & 0x80) >> 7;
@@ -370,7 +372,7 @@ impl Chip8 {
         }
     }
 
-    // FX07
+    // FX07 TESTED
     fn load_delay(&mut self) {
         self.v[self.vxi()] = self.delay_timer & 0xFF
     }
@@ -381,12 +383,12 @@ impl Chip8 {
         self.keypad_register = self.vxi();
     }
 
-    // FX15
+    // FX15 TESTED
     fn set_delay(&mut self) {
         self.delay_timer = self.v[self.vxi()] & 0xFF
     }
 
-    // FX18
+    // FX18 TESTED
     fn set_sound(&mut self) {
         self.sound_timer = self.v[self.vxi()] & 0xFF
     }

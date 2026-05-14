@@ -22,7 +22,7 @@ use crossterm::terminal::{
     disable_raw_mode,
     enable_raw_mode,
     EnterAlternateScreen,
-    LeaveAlternateScreen
+    LeaveAlternateScreen,
 };
 use crossterm::event::{
     read,
@@ -109,15 +109,11 @@ fn test_rom(path: &str) -> Result<()>  {
 }
 
 fn chip8_loop(chip: &mut Chip8) -> Result<()> {
-    let cycles_per_frame = 10;
-    const WAIT_TIME: Duration = time::Duration::from_millis(15);
+    let cycles_per_frame = 8;
+    const WAIT_TIME: Duration = time::Duration::from_millis(1);
     const WAIT_TIME_2: Duration = time::Duration::from_millis(1);
 
     loop {
-        for _ in 0..cycles_per_frame {
-            chip.emulate_cycle();
-        }
-
         if poll(WAIT_TIME_2).unwrap() {
             let event = read()?;
 
@@ -174,6 +170,14 @@ fn chip8_loop(chip: &mut Chip8) -> Result<()> {
             }
         }
 
+        for _ in 0..cycles_per_frame {
+            chip.emulate_cycle();
+        }
+
+        if chip.sound_timer > 0 {
+            print!("{}", 0x07 as char);
+        }
+
         if chip.should_draw {
             execute!(stdout(),
                 Clear(ClearType::All),
@@ -207,7 +211,7 @@ fn print_crossterm(x: usize, y: usize) -> Result<()> {
 }
 
 fn main() {
-    let rom = 6;
+    let rom = 7;
 
     match rom {
         1 => test_rom_1(),
