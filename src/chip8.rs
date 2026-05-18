@@ -93,11 +93,11 @@ impl Chip8 {
         } 
     }
 
-    fn vxi(&self) -> usize {
+    fn x(&self) -> usize {
         (self.opcode & 0x0F00) >> 8
     }
 
-    fn vyi(&self) -> usize {
+    fn y(&self) -> usize {
         (self.opcode & 0x00F0) >> 4
     }
 
@@ -203,63 +203,63 @@ impl Chip8 {
 
     // 3XNN TESTED
     fn skip_equal(&mut self) {
-        if self.v[self.vxi()] == self.nn() {
+        if self.v[self.x()] == self.nn() {
             self.pc += 2;
         }
     }
 
     // 4XNN TESTED
     fn skip_not_equal(&mut self) {
-        if self.v[self.vxi()] != self.nn() {
+        if self.v[self.x()] != self.nn() {
             self.pc += 2;
         }
     }
 
     // 5XY0 TESTED
     fn skip_equal_reg(&mut self) {
-        if self.v[self.vxi()] == self.v[self.vyi()] {
+        if self.v[self.x()] == self.v[self.y()] {
             self.pc += 2;
         }
     }
 
     // 6XNN TESTED
     fn load_reg(&mut self) {
-        self.v[self.vxi()] = self.nn();
+        self.v[self.x()] = self.nn();
     }
 
     // 7XNN TESTED
     fn add_constant(&mut self) {
-        let val = self.v[self.vxi()] + self.nn();
-        self.v[self.vxi()] = val & 0xFF;
+        let val = self.v[self.x()] + self.nn();
+        self.v[self.x()] = val & 0xFF;
     }
 
     // 8XY0 TESTED
     fn set_reg(&mut self) {
-        self.v[self.vxi()] = self.v[self.vyi()];
+        self.v[self.x()] = self.v[self.y()];
     }
 
     // 8XY1 TESTED
     fn bitwise_or(&mut self) {
-        self.v[self.vxi()] = self.v[self.vxi()] | self.v[self.vyi()];
+        self.v[self.x()] = self.v[self.x()] | self.v[self.y()];
         self.v[0xF] = 0x0; // xF reset quirk
     }
 
     // 8XY2 TESTED
     fn bitwise_and(&mut self) {
-        self.v[self.vxi()] = self.v[self.vxi()] & self.v[self.vyi()];
+        self.v[self.x()] = self.v[self.x()] & self.v[self.y()];
         self.v[0xF] = 0x0; // xF reset quirk
     }
 
     // 8XY3 TESTED
     fn bitwise_xor(&mut self) {
-        self.v[self.vxi()] = self.v[self.vxi()] ^ self.v[self.vyi()];
+        self.v[self.x()] = self.v[self.x()] ^ self.v[self.y()];
         self.v[0xF] = 0x0; // xF reset quirk
     }
 
     // 8XY4 TESTED
     fn add(&mut self) {
-        let val = self.v[self.vxi()] + self.v[self.vyi()];
-        self.v[self.vxi()] = val & 0xFF;
+        let val = self.v[self.x()] + self.v[self.y()];
+        self.v[self.x()] = val & 0xFF;
 
         if val > 0xFF {
             self.v[0xF] = 0x1;
@@ -270,11 +270,11 @@ impl Chip8 {
 
     // 8XY5 TESTED
     fn sub(&mut self) {
-        let val_0 = self.v[self.vxi()];
-        let val_1 = self.v[self.vxi()] as isize - self.v[self.vyi()] as isize;
-        self.v[self.vxi()] = val_1 as usize & 0xFF;
+        let val_0 = self.v[self.x()];
+        let val_1 = self.v[self.x()] as isize - self.v[self.y()] as isize;
+        self.v[self.x()] = val_1 as usize & 0xFF;
 
-        if val_0 >= self.v[self.vyi()] {
+        if val_0 >= self.v[self.y()] {
             self.v[0xF] = 0x1;
         } else {
             self.v[0xF] = 0x0;
@@ -283,18 +283,18 @@ impl Chip8 {
 
     // 8XY6 TESTED
     fn shr(&mut self) {
-        self.v[self.vxi()] = self.v[self.vyi()]; // shifting quirk
-        let val = self.v[self.vxi()];
-        self.v[self.vxi()] = (self.v[self.vxi()] >> 1) & 0xFF;
+        self.v[self.x()] = self.v[self.y()]; // shifting quirk
+        let val = self.v[self.x()];
+        self.v[self.x()] = (self.v[self.x()] >> 1) & 0xFF;
         self.v[0xF] = val & 0x1;
     }
 
     // 8XY7 TESTED
     fn subn(&mut self) {
-        let val = self.v[self.vyi()] as isize - self.v[self.vxi()] as isize;
-        self.v[self.vxi()] = val as usize & 0xFF;
+        let val = self.v[self.y()] as isize - self.v[self.x()] as isize;
+        self.v[self.x()] = val as usize & 0xFF;
 
-        if self.v[self.vyi()] > self.v[self.vxi()] {
+        if self.v[self.y()] > self.v[self.x()] {
             self.v[0xF] = 0x1;
         } else {
             self.v[0xF] = 0x0;
@@ -303,15 +303,15 @@ impl Chip8 {
 
     // 8XYE TESTED
     fn shl(&mut self) {
-        self.v[self.vxi()] = self.v[self.vyi()]; // shifting quirk
-        let val = self.v[self.vxi()];
-        self.v[self.vxi()] = (self.v[self.vxi()] << 1) & 0xFF;
+        self.v[self.x()] = self.v[self.y()]; // shifting quirk
+        let val = self.v[self.x()];
+        self.v[self.x()] = (self.v[self.x()] << 1) & 0xFF;
         self.v[0xF] = (val & 0x80) >> 7;
     }
 
     // 9XY0 TESTED
     fn skip_reg_not_equal(&mut self) {
-        if self.v[self.vxi()] != self.v[self.vyi()] {
+        if self.v[self.x()] != self.v[self.y()] {
             self.pc += 2;
         } 
     }
@@ -329,13 +329,13 @@ impl Chip8 {
     // CXNN
     fn random_value(&mut self) {
         let result = self.rng.random_range(0x0..0xFF) & self.nn();
-        self.v[self.vxi()] = result;
+        self.v[self.x()] = result;
     }
 
     // DXYN TESTED
     fn draw(&mut self) {
-        let x_pos = self.v[self.vxi()] % 64;
-        let y_pos = self.v[self.vyi()] % 32;
+        let x_pos = self.v[self.x()] % 64;
+        let y_pos = self.v[self.y()] % 32;
         let height = self.n();
         self.v[0xF] = 0;
 
@@ -360,49 +360,49 @@ impl Chip8 {
 
     // EX9E TESTED
     fn skip_key_pressed(&mut self) {
-        if self.key[self.v[self.vxi()]] {
+        if self.key[self.v[self.x()]] {
             self.pc += 2;
         }
     }
 
     // EXA1 TESTED
     fn skip_key_not_pressed(&mut self) {
-        if !self.key[self.v[self.vxi()]] {
+        if !self.key[self.v[self.x()]] {
             self.pc += 2;
         }
     }
 
     // FX07 TESTED
     fn load_delay(&mut self) {
-        self.v[self.vxi()] = self.delay_timer & 0xFF
+        self.v[self.x()] = self.delay_timer & 0xFF
     }
 
     // FX0A TESTED
     fn load_key_pressed(&mut self) {
         self.wait_for_key = true;
-        self.keypad_register = self.vxi();
+        self.keypad_register = self.x();
     }
 
     // FX15 TESTED
     fn set_delay(&mut self) {
-        self.delay_timer = self.v[self.vxi()] & 0xFF
+        self.delay_timer = self.v[self.x()] & 0xFF
     }
 
     // FX18 TESTED
     fn set_sound(&mut self) {
-        self.sound_timer = self.v[self.vxi()] & 0xFF
+        self.sound_timer = self.v[self.x()] & 0xFF
     }
 
     // FX1E TESTED
     fn add_index(&mut self) {
-        self.i = self.i + self.v[self.vxi()];
+        self.i = self.i + self.v[self.x()];
     }
 
     // FX33 TESTED
     fn store_bcd(&mut self) {
-        let hundred = self.v[self.vxi()] / 100 % 10;
-        let ten = self.v[self.vxi()] / 10 % 10;
-        let one = self.v[self.vxi()] % 10;
+        let hundred = self.v[self.x()] / 100 % 10;
+        let ten = self.v[self.x()] / 10 % 10;
+        let one = self.v[self.x()] % 10;
 
         self.memory[self.i] = hundred;
         self.memory[self.i + 1] = ten;
@@ -411,17 +411,17 @@ impl Chip8 {
 
     // FX55 TESTED
     fn store_regs(&mut self) {
-        for i in 0..(self.vxi() + 1) {
+        for i in 0..(self.x() + 1) {
             self.memory[self.i + i] = self.v[i];
         }
-        self.i += self.vxi(); // memory quirk
+        self.i += self.x(); // memory quirk
     }
 
     // FX65 TESTED
     fn read_regs(&mut self) {
-        for i in 0..(self.vxi() + 1) {
+        for i in 0..(self.x() + 1) {
             self.v[i] = self.memory[self.i + i];
         }
-        self.i += self.vxi(); // memory quirk
+        self.i += self.x(); // memory quirk
     }
 }

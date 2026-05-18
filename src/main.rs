@@ -1,6 +1,8 @@
 #![allow(unused)]
 
 mod chip8;
+mod keypad;
+mod screen;
 
 use std::{
     thread,
@@ -15,27 +17,22 @@ use crossterm::{
     execute,
     cursor
 }; 
-use crossterm::style::Print;
+
 use crossterm::terminal::{
-    Clear,
-    ClearType,
     disable_raw_mode,
     enable_raw_mode,
     EnterAlternateScreen,
     LeaveAlternateScreen,
 };
 use crossterm::event::{
-    read,
-    poll,
-    Event,
-    KeyCode,
-    KeyEventKind,
     KeyboardEnhancementFlags,
     PushKeyboardEnhancementFlags,
     PopKeyboardEnhancementFlags
 };
 
 use crate::chip8::Chip8;
+use crate::keypad::handle_keypad;
+use crate::screen::draw_screen;
 
 fn test_rom_1() {
     let mut chip = Chip8::new();
@@ -110,63 +107,12 @@ fn test_rom(path: &str) -> Result<()>  {
 
 fn chip8_loop(chip: &mut Chip8) -> Result<()> {
     let cycles_per_frame = 8;
-    const WAIT_TIME: Duration = time::Duration::from_millis(1);
-    const WAIT_TIME_2: Duration = time::Duration::from_millis(1);
+    const WAIT_TIME: Duration = Duration::from_millis(1);
 
     loop {
-        if poll(WAIT_TIME_2).unwrap() {
-            let event = read()?;
-
-            match event {
-                Event::Key(event) => {
-                    match event.kind {
-                        KeyEventKind::Press => {
-                            match event.code {
-                                KeyCode::Char('1') => chip.key[0x1] = true,
-                                KeyCode::Char('2') => chip.key[0x2] = true,
-                                KeyCode::Char('3') => chip.key[0x3] = true,
-                                KeyCode::Char('4') => chip.key[0xC] = true,
-                                KeyCode::Char('q') => chip.key[0x4] = true,
-                                KeyCode::Char('w') => chip.key[0x5] = true,
-                                KeyCode::Char('e') => chip.key[0x6] = true,
-                                KeyCode::Char('r') => chip.key[0xD] = true,
-                                KeyCode::Char('a') => chip.key[0x7] = true,
-                                KeyCode::Char('s') => chip.key[0x8] = true,
-                                KeyCode::Char('d') => chip.key[0x9] = true,
-                                KeyCode::Char('f') => chip.key[0xE] = true,
-                                KeyCode::Char('z') => chip.key[0xA] = true,
-                                KeyCode::Char('x') => chip.key[0x0] = true,
-                                KeyCode::Char('c') => chip.key[0xB] = true,
-                                KeyCode::Char('v') => chip.key[0xF] = true,
-                                KeyCode::Esc => break,
-                                _ => {},
-                            }
-                        },
-                        KeyEventKind::Release => {
-                            match event.code {
-                                KeyCode::Char('1') => chip.key[0x1] = false,
-                                KeyCode::Char('2') => chip.key[0x2] = false,
-                                KeyCode::Char('3') => chip.key[0x3] = false,
-                                KeyCode::Char('4') => chip.key[0xC] = false,
-                                KeyCode::Char('q') => chip.key[0x4] = false,
-                                KeyCode::Char('w') => chip.key[0x5] = false,
-                                KeyCode::Char('e') => chip.key[0x6] = false,
-                                KeyCode::Char('r') => chip.key[0xD] = false,
-                                KeyCode::Char('a') => chip.key[0x7] = false,
-                                KeyCode::Char('s') => chip.key[0x8] = false,
-                                KeyCode::Char('d') => chip.key[0x9] = false,
-                                KeyCode::Char('f') => chip.key[0xE] = false,
-                                KeyCode::Char('z') => chip.key[0xA] = false,
-                                KeyCode::Char('x') => chip.key[0x0] = false,
-                                KeyCode::Char('c') => chip.key[0xB] = false,
-                                KeyCode::Char('v') => chip.key[0xF] = false,
-                                _ => {},
-                            }
-                        },
-                        _ => {},
-                    }
-                }
-                _ => {}
+        if let Some(quit) = handle_keypad(chip) {
+            if quit {
+                break;
             }
         }
 
@@ -178,40 +124,15 @@ fn chip8_loop(chip: &mut Chip8) -> Result<()> {
             print!("{}", 0x07 as char);
         }
 
-        if chip.should_draw {
-            execute!(stdout(),
-                Clear(ClearType::All),
-                cursor::MoveTo(0, 0),
-            )?;
-
-            for y in 0..32 {
-                for x in 0..64 {
-                    if chip.gfx[x + y * 64] == 1 {
-                        print_crossterm(x, y);
-                    }
-                }
-            }
-
-            chip.should_draw = false;
-        }
+        draw_screen(chip);
 
         thread::sleep(WAIT_TIME);
     }
     Ok(())
 }
 
-fn print_crossterm(x: usize, y: usize) -> Result<()> {
-    execute!(
-        stdout(),
-        cursor::MoveTo(x as u16, y as u16),
-        Print("█"),
-    )?;
-
-    Ok(())
-}
-
 fn main() {
-    let rom = 7;
+    let rom = 6;
 
     match rom {
         1 => test_rom_1(),
