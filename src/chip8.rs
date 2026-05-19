@@ -3,7 +3,7 @@ use rand::prelude::*;
 pub struct Chip8 {
     pub gfx: [u8; 64 * 32], // graphics
     pub key: [bool; 16],    // keypad
-    pub should_draw: bool,
+    pub draw_flag: bool,
     wait_for_key: bool,
     keypad_register: usize,
     opcode: usize,
@@ -23,7 +23,7 @@ impl Chip8 {
         Self {
             gfx: [0; 64 * 32],
             key: [false; 16],
-            should_draw: false,
+            draw_flag: false,
             wait_for_key: false,
             keypad_register: 0,
             opcode: 0,
@@ -180,7 +180,7 @@ impl Chip8 {
     // 00E0 TESTED
     fn clear_screen(&mut self) {
         self.gfx = [0; 64 * 32];
-        self.should_draw = true;
+        self.draw_flag = true;
     }
 
     // 00EE TESTED
@@ -355,7 +355,7 @@ impl Chip8 {
             }
         }
 
-        self.should_draw = true;
+        self.draw_flag = true;
     }
 
     // EX9E TESTED

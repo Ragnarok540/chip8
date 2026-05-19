@@ -8,7 +8,10 @@ use std::{
     thread,
     time
 };
-use std::time::Duration;
+use std::time::{
+    Duration,
+    SystemTime
+};
 use std::io::{
     stdout,
     Result
@@ -32,7 +35,7 @@ use crossterm::event::{
 
 use crate::chip8::Chip8;
 use crate::keypad::handle_keypad;
-use crate::screen::draw_screen;
+use crate::screen::draw;
 
 fn test_rom_1() {
     let mut chip = Chip8::new();
@@ -106,33 +109,41 @@ fn test_rom(path: &str) -> Result<()>  {
 }
 
 fn chip8_loop(chip: &mut Chip8) -> Result<()> {
-    let cycles_per_frame = 8;
-    const WAIT_TIME: Duration = Duration::from_millis(1);
+    let mut last_time = SystemTime::now();
+    let mut not_processed = 0.0;
+    const NS_PER_CYCLE: f64 = 1000000000.0 / 480.0;
 
     loop {
-        if let Some(quit) = handle_keypad(chip) {
-            if quit {
+        if let Some(esc) = handle_keypad(chip) {
+            if esc {
                 break;
             }
         }
 
-        for _ in 0..cycles_per_frame {
+        let now = SystemTime::now();
+        let difference = now.duration_since(last_time).expect("Clock may have gone backwards");
+        not_processed += (difference.as_nanos() as f64) / NS_PER_CYCLE;
+        last_time = now;
+
+        while not_processed >= 1.0 {
             chip.emulate_cycle();
+            not_processed -= 1.0;
         }
 
         if chip.sound_timer > 0 {
             print!("{}", 0x07 as char);
         }
 
-        draw_screen(chip);
+        if chip.draw_flag {
+            draw(chip);
+        }
 
-        thread::sleep(WAIT_TIME);
     }
     Ok(())
 }
 
 fn main() {
-    let rom = 6;
+    let rom = 8;
 
     match rom {
         1 => test_rom_1(),
@@ -143,6 +154,7 @@ fn main() {
         6 => test_rom("roms/6-keypad.ch8").expect("something went wrong"),
         7 => test_rom("roms/7-beep.ch8").expect("something went wrong"),
         8 => test_rom("roms/pong.ch8").expect("something went wrong"),
+        9 => test_rom("roms/invaders.ch8").expect("something went wrong"),
         _ => panic!("test rom does not exist!"),
     }
 }
