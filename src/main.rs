@@ -4,23 +4,19 @@ mod chip8;
 mod keypad;
 mod screen;
 
-use std::{
-    thread,
-    time
-};
 use std::time::{
     Duration,
-    SystemTime
+    SystemTime,
 };
 use std::io::{
     stdout,
     Result
 };
+
 use crossterm::{
     execute,
-    cursor
+    cursor,
 }; 
-
 use crossterm::terminal::{
     disable_raw_mode,
     enable_raw_mode,
@@ -30,7 +26,7 @@ use crossterm::terminal::{
 use crossterm::event::{
     KeyboardEnhancementFlags,
     PushKeyboardEnhancementFlags,
-    PopKeyboardEnhancementFlags
+    PopKeyboardEnhancementFlags,
 };
 
 use crate::chip8::Chip8;
@@ -143,7 +139,7 @@ fn chip8_loop(chip: &mut Chip8) -> Result<()> {
 }
 
 fn main() {
-    let rom = 8;
+    let rom = 6;
 
     match rom {
         1 => test_rom_1(),

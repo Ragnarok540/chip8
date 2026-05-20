@@ -1,5 +1,11 @@
 use rand::prelude::*;
 
+macro_rules! not_decoded {
+    ($opcode:expr) => {
+        panic!("opcode could not be decoded: {0:#x}", $opcode)
+    }
+}
+
 pub struct Chip8 {
     pub gfx: [u8; 64 * 32], // graphics
     pub key: [bool; 16],    // keypad
@@ -117,13 +123,14 @@ impl Chip8 {
         self.opcode = self.memory[self.pc] << 8 | self.memory[self.pc + 1];
     }
 
+
     fn decode_opcode(&mut self) {
         match self.opcode & 0xF000 {
             0x000 => {
                 match self.opcode & 0x00FF {
                     0x00E0 => self.clear_screen(),
                     0x00EE => self.ret(),
-                    _ => panic!("opcode could not be decoded: {0:#x}", self.opcode),
+                    _ => not_decoded!(self.opcode),
                 }
             },
             0x1000 => self.goto(),
@@ -144,7 +151,7 @@ impl Chip8 {
                     0x0006 => self.shr(),
                     0x0007 => self.subn(),
                     0x000E => self.shl(),
-                    _ => panic!("opcode could not be decoded: {0:#x}", self.opcode),
+                    _ => not_decoded!(self.opcode),
                 }
             },
             0x9000 => self.skip_reg_not_equal(),
@@ -156,7 +163,7 @@ impl Chip8 {
                 match self.opcode & 0x00FF {
                     0x009E => self.skip_key_pressed(),
                     0x00A1 => self.skip_key_not_pressed(),
-                    _ => panic!("opcode could not be decoded: {0:#x}", self.opcode),
+                    _ => not_decoded!(self.opcode),
                 }
             },
             0xF000 => {
@@ -170,10 +177,10 @@ impl Chip8 {
                     0x0033 => self.store_bcd(),
                     0x0055 => self.store_regs(),
                     0x0065 => self.read_regs(),
-                    _ => panic!("opcode could not be decoded: {0:#x}", self.opcode),
+                    _ => not_decoded!(self.opcode),
                 }
             },
-            _ => panic!("opcode could not be decoded: {0:#x}", self.opcode),
+            _ => not_decoded!(self.opcode),
         }
     }
 
